@@ -1,20 +1,11 @@
-# Base image
-FROM node:22-alpine
-
-# Set working directory
+﻿FROM node:22-alpine
 WORKDIR /app
-
-# Copy package files
+ENV NODE_ENV=production
 COPY package*.json ./
-
-# Install dependencies
-RUN npm ci --omit=dev
-
-# Copy source code
+RUN npm ci --omit=dev && npm cache clean --force
 COPY . .
-
-# Expose port
+RUN chown -R node:node /app
+USER node
 EXPOSE 5000
-
-# Start command
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD wget -qO- "http://127.0.0.1:${PORT:-5000}/health" > /dev/null || exit 1
 CMD ["node", "server.js"]

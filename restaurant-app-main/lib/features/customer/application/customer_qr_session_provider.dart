@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class CustomerQrSession {
   const CustomerQrSession({
@@ -6,12 +6,16 @@ class CustomerQrSession {
     required this.restaurantName,
     required this.logoUrl,
     required this.primaryColorHex,
+    required this.guestName,
+    required this.guestPhone,
   });
 
   final String tableNo;
   final String restaurantName;
   final String logoUrl;
   final String primaryColorHex;
+  final String guestName;
+  final String guestPhone;
 }
 
 class CustomerQrSessionNotifier extends Notifier<CustomerQrSession?> {
@@ -20,15 +24,19 @@ class CustomerQrSessionNotifier extends Notifier<CustomerQrSession?> {
 
   void startTableSession({
     required String tableNo,
-    String restaurantName = 'Sharma Restaurant',
+    String restaurantName = 'Restaurant Workspace',
     String logoUrl = '',
-    String primaryColorHex = '#FF4D0A',
+    String primaryColorHex = '#006B3C',
+    String guestName = '',
+    String guestPhone = '',
   }) {
     state = CustomerQrSession(
       tableNo: tableNo,
       restaurantName: restaurantName,
       logoUrl: logoUrl,
       primaryColorHex: primaryColorHex,
+      guestName: guestName,
+      guestPhone: guestPhone,
     );
   }
 
@@ -39,3 +47,4 @@ final customerQrSessionProvider =
     NotifierProvider<CustomerQrSessionNotifier, CustomerQrSession?>(
       CustomerQrSessionNotifier.new,
     );
+

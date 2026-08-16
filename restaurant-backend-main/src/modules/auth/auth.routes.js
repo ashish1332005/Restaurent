@@ -1,6 +1,7 @@
 const express = require('express');
 const {
     login,
+    registerRestaurantOwner,
     registerCustomer,
     googleCustomerAuth,
     getMe,
@@ -13,6 +14,7 @@ const { protect } = require('../../middlewares/auth.middleware');
 const router = express.Router();
 
 router.post('/login', login);
+router.post('/register/restaurant', registerRestaurantOwner);
 router.post('/register/customer', registerCustomer);
 router.post('/google/customer', googleCustomerAuth);
 router.get('/demo-profile/:demoKey', getDemoProfile);

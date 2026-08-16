@@ -4,7 +4,8 @@ const invoiceSchema = new mongoose.Schema({
     orderId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Order',
-        required: true
+        required: true,
+        unique: true
     },
     paymentMethod: {
         type: String,
@@ -12,6 +13,11 @@ const invoiceSchema = new mongoose.Schema({
         required: true
     },
     transactionId: String,
+    splitPayments: [{
+        paymentMethod: { type: String, enum: ['Cash', 'Card', 'UPI', 'Wallet'], required: true },
+        amount: { type: Number, required: true, min: 0.01 },
+        transactionId: { type: String, default: '' }
+    }],
     amount: {
         type: Number,
         required: true

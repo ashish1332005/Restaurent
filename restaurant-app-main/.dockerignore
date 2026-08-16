@@ -1,0 +1,17 @@
+.dart_tool
+.gradle
+.gradle-cache
+.tmp-gradle
+build
+.pub-cache
+.git
+screenshots
+*.log
+flutter_apk_*.txt
+gradle_bg_exit.txt
+auth_login_current.png
+
+*.apk
+*.aab
+*.png
+hs_err_pid*

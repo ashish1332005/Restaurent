@@ -1,0 +1,48 @@
+name: atithi-restaurant-saas
+
+services:
+  api:
+    build:
+      context: ./restaurant-backend-main
+      dockerfile: Dockerfile
+    env_file:
+      - ./restaurant-backend-main/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_BIND_ADDRESS:-127.0.0.1}:${BACKEND_PORT:-5000}:5000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5000/ready"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+    networks: [atithi]
+
+  web:
+    build:
+      context: ./restaurant-app-main
+      dockerfile: Dockerfile
+      args:
+        API_BASE_URL: ${PUBLIC_API_BASE_URL:?Set PUBLIC_API_BASE_URL to the public HTTPS API /api/v1 URL}
+        GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+        GOOGLE_SERVER_CLIENT_ID: ${GOOGLE_SERVER_CLIENT_ID:-}
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_BIND_ADDRESS:-127.0.0.1}:${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+    networks: [atithi]
+
+networks:
+  atithi:
+    driver: bridge

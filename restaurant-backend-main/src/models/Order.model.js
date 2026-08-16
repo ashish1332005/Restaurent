@@ -94,7 +94,7 @@ const orderSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['Pending', 'Preparing', 'Ready', 'Served', 'Paid', 'Cancelled'],
+        enum: ['Pending', 'Accepted', 'Preparing', 'Ready', 'Served', 'Customer Finished', 'Bill Requested', 'Paid', 'Cancelled'],
         default: 'Pending'
     },
     paymentStatus: {
@@ -102,9 +102,11 @@ const orderSchema = new mongoose.Schema({
         enum: ['Unpaid', 'Paid', 'Refunded'],
         default: 'Unpaid'
     },
-    kitchenNotes: String
+    kitchenNotes: String,
+    inventoryConsumed: { type: Boolean, default: false }
 }, {
     timestamps: true
 });
 
 module.exports = mongoose.model('Order', orderSchema);
+

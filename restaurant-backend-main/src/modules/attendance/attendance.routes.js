@@ -1,0 +1,12 @@
+﻿const express=require('express');
+const { protect }=require('../../middlewares/auth.middleware');
+const { authorize }=require('../../middlewares/rbac.middleware');
+const { requireActiveSubscription }=require('../../middlewares/subscription.middleware');
+const c=require('./attendance.controller');
+const router=express.Router();
+router.use(protect,requireActiveSubscription);
+router.get('/',authorize('Super Admin','Restaurant Admin','Manager'),c.list);
+router.post('/',authorize('Super Admin','Restaurant Admin','Manager'),c.schedule);
+router.post('/:id/clock-in',authorize('Super Admin','Restaurant Admin','Manager','Cashier','Kitchen','Waiter'),c.clockIn);
+router.post('/:id/clock-out',authorize('Super Admin','Restaurant Admin','Manager','Cashier','Kitchen','Waiter'),c.clockOut);
+module.exports=router;
