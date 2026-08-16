@@ -540,7 +540,7 @@ class _AdminSettingsPanelState extends State<AdminSettingsPanel> {
   Widget _tag(String text) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
     decoration: BoxDecoration(
-      color: const Color(0xFFFFE7D6),
+      color: const Color(0xFFFFF1D6),
       borderRadius: BorderRadius.circular(20),
     ),
     child: Text(
@@ -554,7 +554,7 @@ class _AdminSettingsPanelState extends State<AdminSettingsPanel> {
   BoxDecoration _box() => BoxDecoration(
     color: Colors.white,
     borderRadius: BorderRadius.circular(18),
-    border: Border.all(color: const Color(0xFFECE2D9)),
+    border: Border.all(color: const Color(0xFFE6DED2)),
   );
   void _message(String text) => ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(content: Text(text), behavior: SnackBarBehavior.floating),

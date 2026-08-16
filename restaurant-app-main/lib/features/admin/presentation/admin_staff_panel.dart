@@ -178,7 +178,7 @@ class _AdminStaffPanelState extends State<AdminStaffPanel> {
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundColor: const Color(0xFFFFE7D6),
+                backgroundColor: const Color(0xFFFFF1D6),
                 child: Text(
                   _initials('${user['name']}'),
                   style: const TextStyle(
@@ -201,7 +201,7 @@ class _AdminStaffPanelState extends State<AdminStaffPanel> {
                     ),
                     Text(
                       role,
-                      style: const TextStyle(color: Color(0xFF806E64)),
+                      style: const TextStyle(color: Color(0xFF667085)),
                     ),
                   ],
                 ),
@@ -249,7 +249,7 @@ class _AdminStaffPanelState extends State<AdminStaffPanel> {
     padding: const EdgeInsets.only(bottom: 7),
     child: Row(
       children: [
-        Icon(icon, size: 17, color: const Color(0xFF806E64)),
+        Icon(icon, size: 17, color: const Color(0xFF667085)),
         const SizedBox(width: 8),
         Expanded(child: Text(value, overflow: TextOverflow.ellipsis)),
       ],
@@ -411,7 +411,7 @@ class _AdminStaffPanelState extends State<AdminStaffPanel> {
   BoxDecoration _box() => BoxDecoration(
     color: Colors.white,
     borderRadius: BorderRadius.circular(18),
-    border: Border.all(color: const Color(0xFFECE2D9)),
+    border: Border.all(color: const Color(0xFFE6DED2)),
   );
   void _message(String text) => ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(content: Text(text), behavior: SnackBarBehavior.floating),

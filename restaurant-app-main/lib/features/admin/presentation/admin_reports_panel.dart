@@ -220,7 +220,7 @@ class _AdminReportsPanelState extends State<AdminReportsPanel> {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Color(0xFF806E64)),
+                  style: const TextStyle(color: Color(0xFF667085)),
                 ),
                 Text(
                   value,
@@ -346,7 +346,7 @@ class _AdminReportsPanelState extends State<AdminReportsPanel> {
   BoxDecoration _box() => BoxDecoration(
     color: Colors.white,
     borderRadius: BorderRadius.circular(18),
-    border: Border.all(color: const Color(0xFFECE2D9)),
+    border: Border.all(color: const Color(0xFFE6DED2)),
   );
   void _message(String text) => ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(content: Text(text), behavior: SnackBarBehavior.floating),

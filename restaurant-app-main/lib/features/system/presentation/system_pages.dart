@@ -50,7 +50,7 @@ class LegalDocumentScreen extends StatelessWidget {
                     ),
                     const Text(
                       'Last updated: 15 August 2026',
-                      style: TextStyle(color: Color(0xFF806E64)),
+                      style: TextStyle(color: Color(0xFF667085)),
                     ),
                     const SizedBox(height: 24),
                     ...sections.map(
@@ -71,7 +71,7 @@ class LegalDocumentScreen extends StatelessWidget {
                               section.$2,
                               style: const TextStyle(
                                 height: 1.55,
-                                color: Color(0xFF5E4C43),
+                                color: Color(0xFF475467),
                               ),
                             ),
                           ],
@@ -81,7 +81,7 @@ class LegalDocumentScreen extends StatelessWidget {
                     const Divider(height: 32),
                     const Text(
                       'Questions can be sent to the support contact published by your restaurant or SaaS administrator.',
-                      style: TextStyle(color: Color(0xFF806E64)),
+                      style: TextStyle(color: Color(0xFF667085)),
                     ),
                   ],
                 ),
@@ -159,7 +159,7 @@ Widget _legalIcon(IconData icon) => Container(
   width: 62,
   height: 62,
   decoration: BoxDecoration(
-    color: const Color(0xFFFFE7D6),
+    color: const Color(0xFFFFF1D6),
     borderRadius: BorderRadius.circular(18),
   ),
   child: Icon(icon, color: _saffron, size: 31),
@@ -466,7 +466,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   BoxDecoration _box() => BoxDecoration(
     color: Colors.white,
     borderRadius: BorderRadius.circular(18),
-    border: Border.all(color: const Color(0xFFECE2D9)),
+    border: Border.all(color: const Color(0xFFE6DED2)),
   );
   void _message(String text) {
     if (mounted) {
@@ -518,7 +518,7 @@ class _StatePage extends StatelessWidget {
                 Text(
                   message,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(height: 1.5, color: Color(0xFF806E64)),
+                  style: const TextStyle(height: 1.5, color: Color(0xFF667085)),
                 ),
                 const SizedBox(height: 25),
                 SizedBox(

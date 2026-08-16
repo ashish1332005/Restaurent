@@ -1422,42 +1422,45 @@ class _UiResetScreenState extends State<UiResetScreen> {
     ),
   );
 
-  Widget _hero() => ClipRRect(
-    borderRadius: BorderRadius.circular(26),
-    child: Stack(
-      children: [
-        Image.asset(
-          'assets/images/indian_hospitality_hero.png',
-          height: 205,
-          width: double.infinity,
-          fit: BoxFit.cover,
-        ),
-        Container(
-          height: 205,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xC0000000), Color(0x10000000)],
+  Widget _hero() {
+    final hasTable = _venue != null;
+    final height = hasTable ? 132.0 : 190.0;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(hasTable ? 20 : 26),
+      child: Stack(
+        children: [
+          Image.asset(
+            'assets/images/indian_hospitality_hero.png',
+            height: height,
+            width: double.infinity,
+            fit: BoxFit.cover,
+          ),
+          Container(
+            height: height,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xC0000000), Color(0x10000000)],
+              ),
             ),
           ),
-        ),
-        Positioned(
-          left: 20,
-          bottom: 20,
-          child: Text(
-            _venue == null
-                ? 'A seat made for\ngood food.'
-                : 'Good food.\nWarm moments.',
-            style: GoogleFonts.playfairDisplay(
-              color: Colors.white,
-              fontSize: 27,
-              height: 1.08,
-              fontWeight: FontWeight.w700,
+          Positioned(
+            left: 20,
+            bottom: 20,
+            child: Text(
+              !hasTable ? 'A seat made for\ngood food.' : _restaurantName,
+              style: GoogleFonts.playfairDisplay(
+                color: Colors.white,
+                fontSize: hasTable ? 23 : 27,
+                height: 1.08,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
+
   Widget _scanCard() => Container(
     padding: const EdgeInsets.all(18),
     decoration: BoxDecoration(
@@ -1650,13 +1653,23 @@ class _UiResetScreenState extends State<UiResetScreen> {
       ],
     ),
   );
-  Widget _actions() => Row(
+  Widget _actions() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      _action(Icons.water_drop_outlined, 'Water'),
-      const SizedBox(width: 9),
-      _action(Icons.room_service_outlined, 'Waiter'),
-      const SizedBox(width: 9),
-      _action(Icons.receipt_long_outlined, 'Bill'),
+      const Text(
+        'Quick service',
+        style: TextStyle(fontWeight: FontWeight.w800, color: ink),
+      ),
+      const SizedBox(height: 9),
+      Row(
+        children: [
+          _action(Icons.water_drop_outlined, 'Water'),
+          const SizedBox(width: 8),
+          _action(Icons.room_service_outlined, 'Waiter'),
+          const SizedBox(width: 8),
+          _action(Icons.receipt_long_outlined, 'Bill'),
+        ],
+      ),
     ],
   );
   Widget _action(IconData icon, String title) => Expanded(
@@ -1664,7 +1677,7 @@ class _UiResetScreenState extends State<UiResetScreen> {
       onTap: () => title == 'Bill' ? _openBill() : _service(title),
       borderRadius: BorderRadius.circular(16),
       child: Ink(
-        height: 82,
+        height: 72,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -1834,7 +1847,7 @@ class _UiResetScreenState extends State<UiResetScreen> {
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: const CircleAvatar(
-                      backgroundColor: Color(0xFFFFE7D6),
+                      backgroundColor: Color(0xFFFFF1D6),
                       child: Icon(Icons.restaurant, color: saffron),
                     ),
                     title: Text(
@@ -1912,7 +1925,7 @@ class _UiResetScreenState extends State<UiResetScreen> {
   Widget _mealBadge(String label) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
     decoration: BoxDecoration(
-      color: const Color(0xFFFFE7D6),
+      color: const Color(0xFFFFF1D6),
       borderRadius: BorderRadius.circular(20),
     ),
     child: Text(
@@ -2125,7 +2138,7 @@ class _UiResetScreenState extends State<UiResetScreen> {
   Widget _foodPlaceholder() => Container(
     width: 82,
     height: 82,
-    color: const Color(0xFFFFE9D5),
+    color: const Color(0xFFFFF1D6),
     child: const Icon(Icons.restaurant_menu, color: saffron, size: 34),
   );
   String _orderItemName(dynamic menuItem) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/network/restaurant_api.dart';
+import '../../../core/theme/hospitality_theme.dart';
 
 class AdminPosPanel extends StatefulWidget {
   const AdminPosPanel({
@@ -20,6 +21,7 @@ class AdminPosPanel extends StatefulWidget {
 
 class _AdminPosPanelState extends State<AdminPosPanel> {
   final cart = <String, _PosLine>{};
+  final search = TextEditingController();
   final discount = TextEditingController(text: '0');
   final customerName = TextEditingController();
   final customerPhone = TextEditingController();
@@ -27,6 +29,7 @@ class _AdminPosPanelState extends State<AdminPosPanel> {
   bool busy = false;
   @override
   void dispose() {
+    search.dispose();
     discount.dispose();
     customerName.dispose();
     customerPhone.dispose();
@@ -79,51 +82,189 @@ class _AdminPosPanelState extends State<AdminPosPanel> {
         : Column(children: [menu, const SizedBox(height: 16), checkout]);
   }
 
-  Widget _menu() => Material(
-    color: Colors.white,
-    clipBehavior: Clip.antiAlias,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(18),
-      side: const BorderSide(color: Color(0xFFECE2D9)),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(18),
-          child: Text(
-            'Choose items',
-            style: GoogleFonts.playfairDisplay(
-              fontSize: 23,
-              fontWeight: FontWeight.w700,
+  Widget _menu() {
+    final query = search.text.trim().toLowerCase();
+    final availableItems = widget.menu.where((item) {
+      if (item['isAvailable'] == false) return false;
+      if (query.isEmpty) return true;
+      return [
+        item['name'],
+        item['nameHi'],
+        item['categoryId'] is Map ? item['categoryId']['name'] : '',
+      ].join(' ').toLowerCase().contains(query);
+    }).toList();
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: _box(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: HospitalityColors.softSaffron,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.point_of_sale_rounded,
+                  color: HospitalityColors.saffron,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Choose items',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    Text(
+                      availableItems.length.toString() + ' available dishes',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 13),
+          TextField(
+            controller: search,
+            onChanged: (_) => setState(() {}),
+            decoration: const InputDecoration(
+              prefixIcon: Icon(Icons.search_rounded),
+              hintText: 'Search menu items',
+              isDense: true,
             ),
           ),
-        ),
-        ...widget.menu
-            .where((item) => item['isAvailable'] != false)
-            .map(
-              (item) => ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: const Color(0xFFFFE7D6),
-                  child: Icon(
-                    item['isVeg'] == false ? Icons.set_meal : Icons.eco,
-                    color: const Color(0xFFD66A2C),
+          const SizedBox(height: 13),
+          if (availableItems.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 34),
+              child: Center(
+                child: Text(
+                  query.isEmpty
+                      ? 'No available menu items'
+                      : 'No matching dishes',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            )
+          else
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final columns = constraints.maxWidth >= 760 ? 2 : 1;
+                final gap = 10.0;
+                final width =
+                    (constraints.maxWidth - gap * (columns - 1)) / columns;
+                return Wrap(
+                  spacing: gap,
+                  runSpacing: gap,
+                  children: availableItems
+                      .map(
+                        (item) =>
+                            SizedBox(width: width, child: _posMenuCard(item)),
+                      )
+                      .toList(),
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _posMenuCard(Map<String, dynamic> item) {
+    final image = RestaurantApi.mediaUrl(item['imageUrl'] ?? item['image']);
+    final category = item['categoryId'] is Map
+        ? (item['categoryId']['name'] ?? 'Menu').toString()
+        : 'Menu';
+    return Material(
+      color: HospitalityColors.canvas,
+      borderRadius: BorderRadius.circular(HospitalityRadius.small),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _configure(item),
+        child: SizedBox(
+          height: 88,
+          child: Row(
+            children: [
+              SizedBox(
+                width: 78,
+                height: 88,
+                child: image.isEmpty
+                    ? ColoredBox(
+                        color: HospitalityColors.softSaffron,
+                        child: Icon(
+                          item['isVeg'] == false
+                              ? Icons.set_meal_rounded
+                              : Icons.eco_rounded,
+                          color: HospitalityColors.saffron,
+                        ),
+                      )
+                    : Image.network(
+                        image,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const ColoredBox(
+                          color: HospitalityColors.softSaffron,
+                          child: Icon(
+                            Icons.restaurant_rounded,
+                            color: HospitalityColors.saffron,
+                          ),
+                        ),
+                      ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 11,
+                    vertical: 8,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        (item['name'] ?? 'Menu item').toString(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      Text(
+                        category,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      const Spacer(),
+                      Text(
+                        'Rs ' + (item['basePrice'] ?? 0).toString(),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: HospitalityColors.saffronDark,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                title: Text('${item['name']}'),
-                subtitle: Text(
-                  'Rs ${item['basePrice'] ?? 0} · Tax ${item['taxRate'] ?? 0}%',
-                ),
-                trailing: const Icon(
-                  Icons.add_circle_outline,
-                  color: Color(0xFFD66A2C),
-                ),
-                onTap: () => _configure(item),
               ),
-            ),
-      ],
-    ),
-  );
+              const Padding(
+                padding: EdgeInsets.only(right: 9),
+                child: Icon(
+                  Icons.add_circle_rounded,
+                  color: HospitalityColors.saffron,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _checkout() => Container(
     padding: const EdgeInsets.all(18),
     decoration: _box(),
@@ -156,7 +297,9 @@ class _AdminPosPanelState extends State<AdminPosPanel> {
                   (table) => DropdownMenuItem<String?>(
                     value: '${table['_id']}',
                     child: Text(
-                      ' · ',
+                      (table['name'] ?? 'Table').toString() +
+                          ' - ' +
+                          (table['status'] ?? 'Available').toString(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -229,7 +372,7 @@ class _AdminPosPanelState extends State<AdminPosPanel> {
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          color: HospitalityColors.surface,
                         ),
                       )
                     : const Text('Pay & send'),
@@ -280,9 +423,9 @@ class _AdminPosPanelState extends State<AdminPosPanel> {
     ),
   );
   BoxDecoration _box() => BoxDecoration(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(18),
-    border: Border.all(color: const Color(0xFFECE2D9)),
+    color: HospitalityColors.surface,
+    borderRadius: BorderRadius.circular(HospitalityRadius.medium),
+    border: Border.all(color: HospitalityColors.outline),
   );
 
   Future<void> _configure(Map<String, dynamic> item) async {
@@ -313,7 +456,11 @@ class _AdminPosPanelState extends State<AdminPosPanel> {
                         .map(
                           (v) => DropdownMenuItem(
                             value: '${v['name']}',
-                            child: Text('${v['name']} · Rs ${v['price']}'),
+                            child: Text(
+                              (v['name'] ?? '').toString() +
+                                  ' - Rs ' +
+                                  (v['price'] ?? 0).toString(),
+                            ),
                           ),
                         )
                         .toList(),
@@ -439,7 +586,14 @@ class _AdminPosPanelState extends State<AdminPosPanel> {
             )
             .toList(),
       });
-      if (pay) await RestaurantApi.createBill('${order['_id']}', payment!);
+      Map<String, dynamic>? bill;
+      if (pay) {
+        bill = await RestaurantApi.createBill('', payment!);
+      }
+      if (!mounted) return;
+      if (pay && bill != null) {
+        await _showReceipt(order, bill, payment!);
+      }
       if (!mounted) return;
       setState(() {
         cart.clear();
@@ -449,6 +603,7 @@ class _AdminPosPanelState extends State<AdminPosPanel> {
         tableId = null;
       });
       widget.reload();
+      if (!mounted) return;
       _message(
         pay ? 'Order paid and sent to kitchen.' : 'Order sent to kitchen.',
       );
@@ -466,6 +621,10 @@ class _AdminPosPanelState extends State<AdminPosPanel> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (_, setDialog) => AlertDialog(
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 20,
+          ),
           title: Text('Collect Rs ${total.toStringAsFixed(2)}'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -522,6 +681,90 @@ class _AdminPosPanelState extends State<AdminPosPanel> {
     );
   }
 
+  Future<void> _showReceipt(
+    Map<String, dynamic> order,
+    Map<String, dynamic> bill,
+    Map<String, dynamic> payment,
+  ) => showDialog<void>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
+      title: const Row(
+        children: [
+          CircleAvatar(
+            backgroundColor: HospitalityColors.softLeaf,
+            child: Icon(Icons.check_rounded, color: HospitalityColors.leaf),
+          ),
+          SizedBox(width: 11),
+          Expanded(child: Text('Payment complete')),
+        ],
+      ),
+      content: SizedBox(
+        width: 360,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _receiptRow(
+              'Order',
+              (order['orderNumber'] ?? order['_id'] ?? '').toString(),
+            ),
+            _receiptRow(
+              'Payment',
+              (payment['paymentMethod'] ?? 'Paid').toString(),
+            ),
+            _receiptRow(
+              'Amount',
+              'Rs ' + (bill['total'] ?? order['total'] ?? total).toString(),
+            ),
+            if (tableId != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 14),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(11),
+                  decoration: BoxDecoration(
+                    color: HospitalityColors.softSaffron,
+                    borderRadius: BorderRadius.circular(
+                      HospitalityRadius.small,
+                    ),
+                  ),
+                  child: const Text(
+                    'Table session is closed and the table is ready for cleaning handoff.',
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        FilledButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: const Text('Done'),
+        ),
+      ],
+    ),
+  );
+
+  Widget _receiptRow(String label, String value) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 7),
+    child: Row(
+      children: [
+        Expanded(
+          child: Text(label, style: Theme.of(context).textTheme.bodySmall),
+        ),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w800),
+          ),
+        ),
+      ],
+    ),
+  );
   void _message(String text) => ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(content: Text(text), behavior: SnackBarBehavior.floating),
   );

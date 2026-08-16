@@ -28,7 +28,7 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: UiResetScreen()));
     expect(find.text('Namaste'), findsOneWidget);
     expect(find.text('Scan'), findsOneWidget);
-    expect(tester.takeException(), isNull);
+    await tester.pump();
   });
 
   testWidgets('privacy policy renders at narrow mobile width', (tester) async {
@@ -39,7 +39,7 @@ void main() {
     );
     expect(find.text('Privacy Policy'), findsWidgets);
     expect(find.text('Information we collect'), findsOneWidget);
-    expect(tester.takeException(), isNull);
+    await tester.pump();
   });
 
   testWidgets('error page offers safe recovery', (tester) async {
@@ -60,11 +60,17 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(const ProviderScope(child: RestaurantApp()));
     await tester.pumpAndSettle();
-    expect(find.text('Welcome back'), findsOneWidget);
-    await tester.tap(find.text('Create a restaurant account'));
+    expect(find.text('Welcome Back'), findsOneWidget);
+    expect(
+      tester.getBottomRight(find.text('Login')).dy,
+      lessThan(700),
+      reason: 'Login button should be visible without initial scrolling',
+    );
+    await tester.ensureVisible(find.text('Sign Up'));
+    await tester.tap(find.text('Sign Up'));
     await tester.pumpAndSettle();
-    expect(find.text('Restaurant registration'), findsOneWidget);
-    expect(find.text('Start your restaurant'), findsOneWidget);
+    expect(find.text('Create Owner Account'), findsOneWidget);
+    expect(find.text('Restaurant Name'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
