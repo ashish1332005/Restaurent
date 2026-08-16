@@ -1,0 +1,10 @@
+﻿const express = require('express');
+const { protect } = require('../../middlewares/auth.middleware');
+const { authorize } = require('../../middlewares/rbac.middleware');
+const { requireActiveSubscription } = require('../../middlewares/subscription.middleware');
+const controller = require('./service-requests.controller');
+const router = express.Router();
+router.use(protect, requireActiveSubscription, authorize('Super Admin', 'Restaurant Admin', 'Manager', 'Waiter'));
+router.get('/', controller.list);
+router.patch('/:id', controller.update);
+module.exports = router;

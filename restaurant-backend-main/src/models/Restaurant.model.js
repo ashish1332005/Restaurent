@@ -1,4 +1,4 @@
-﻿const mongoose = require('mongoose');
+const mongoose = require('mongoose');
 
 const restaurantSchema = new mongoose.Schema({
     name: {
@@ -12,12 +12,31 @@ const restaurantSchema = new mongoose.Schema({
     ownerId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        default: null
     },
     subscriptionPlan: {
         type: String,
-        enum: ['Basic', 'Pro', 'Enterprise'],
+        enum: ['Basic', 'Pro', 'Premium', 'Enterprise'],
         default: 'Basic'
+    },
+    subscriptionStatus: {
+        type: String,
+        enum: ['Pending Payment', 'Trial', 'Active', 'Expired', 'Suspended', 'Cancelled'],
+        default: 'Pending Payment'
+    },
+    subscriptionExpiresAt: {
+        type: Date,
+        default: null
+    },
+    orderRadiusMeters: {
+        type: Number,
+        default: 100,
+        min: 10,
+        max: 1000
+    },
+    geoLocation: {
+        latitude: { type: Number, default: null },
+        longitude: { type: Number, default: null }
     },
     menuBranding: {
         primaryColor: { type: String, default: '#FF4D0A' },
@@ -32,7 +51,7 @@ const restaurantSchema = new mongoose.Schema({
     },
     isActive: {
         type: Boolean,
-        default: true
+        default: false
     }
 }, {
     timestamps: true

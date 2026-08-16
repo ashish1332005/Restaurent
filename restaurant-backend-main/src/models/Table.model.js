@@ -20,6 +20,9 @@ const tableSchema = new mongoose.Schema({
         default: 'Available'
     },
     qrCode: String,
+    qrTokenHash: { type: String, unique: true, sparse: true, select: false },
+    qrTokenCreatedAt: { type: Date, default: null },
+    qrTokenActive: { type: Boolean, default: true },
     // Floor plan layout coordinates
     positionX: { type: Number, default: 0 },
     positionY: { type: Number, default: 0 },

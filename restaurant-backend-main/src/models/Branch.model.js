@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { isValidTimeZone } = require('../utils/menu-availability');
 
 const branchSchema = new mongoose.Schema({
     restaurantId: {
@@ -23,7 +24,12 @@ const branchSchema = new mongoose.Schema({
     },
     timezone: {
         type: String,
-        default: 'UTC'
+        trim: true,
+        default: 'Asia/Kolkata',
+        validate: {
+            validator: isValidTimeZone,
+            message: 'Invalid IANA timezone'
+        }
     },
     isActive: {
         type: Boolean,

@@ -8,22 +8,31 @@ const inventorySchema = new mongoose.Schema({
     },
     ingredientName: {
         type: String,
-        required: true
+        required: true,
+        trim: true,
+        minlength: 2,
+        maxlength: 100
     },
     quantity: {
         type: Number,
-        required: true
+        required: true,
+        min: 0
     },
     unit: {
         type: String,
-        required: true // e.g., 'kg', 'L', 'units'
+        required: true,
+        trim: true,
+        maxlength: 20
     },
     threshold: {
-        type: Number, // Low stock alert threshold
-        default: 10
+        type: Number,
+        default: 10,
+        min: 0
     }
 }, {
     timestamps: true
 });
+
+inventorySchema.index({ branchId: 1, ingredientName: 1 }, { unique: true });
 
 module.exports = mongoose.model('Inventory', inventorySchema);

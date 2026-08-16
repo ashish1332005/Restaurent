@@ -15,6 +15,11 @@ const categorySchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please add a category name']
     },
+    nameHi: {
+        type: String,
+        trim: true,
+        maxlength: 100
+    },
     image: {
         type: String,
         default: 'default-category.png'

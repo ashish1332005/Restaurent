@@ -4,6 +4,7 @@ const CustomerProfile = require('../../models/CustomerProfile.model');
 const Role = require('../../models/Role.model');
 const Restaurant = require('../../models/Restaurant.model');
 const Branch = require('../../models/Branch.model');
+const Subscription = require('../../models/Subscription.model');
 const https = require('https');
 const crypto = require('crypto');
 
@@ -189,6 +190,88 @@ exports.registerCustomer = async (req, res, next) => {
     }
 };
 
+
+exports.registerRestaurantOwner = async (req, res, next) => {
+    try {
+        const ownerName = String(req.body.ownerName || req.body.name || '').trim();
+        const restaurantName = String(req.body.restaurantName || '').trim();
+        const phone = normalizeDigits(req.body.phone);
+        const email = normalizeEmail(req.body.email);
+        const password = String(req.body.password || '');
+        const plan = String(req.body.plan || 'Basic').trim();
+        const address = String(req.body.address || '').trim();
+        const latitude = req.body.latitude === undefined ? null : Number(req.body.latitude);
+        const longitude = req.body.longitude === undefined ? null : Number(req.body.longitude);
+        const orderRadiusMeters = Number(req.body.orderRadiusMeters || 100);
+
+        if (ownerName.length < 2) return res.status(400).json({ success: false, message: 'Owner name is required' });
+        if (restaurantName.length < 2) return res.status(400).json({ success: false, message: 'Restaurant name is required' });
+        if (!/^\d{10}$/.test(phone)) return res.status(400).json({ success: false, message: 'Please provide a valid 10-digit mobile number' });
+        if (password.length < 6 || password.length > 72) return res.status(400).json({ success: false, message: 'Password must be between 6 and 72 characters' });
+
+        const role = await Role.findOne({ name: 'Restaurant Admin' });
+        if (!role) return res.status(503).json({ success: false, message: 'Restaurant Admin role is not configured' });
+
+        const existingUser = await User.findOne({ $or: [{ phone }, ...(email ? [{ email }] : [])] });
+        if (existingUser) return res.status(409).json({ success: false, message: 'Owner account already exists' });
+
+        const restaurant = await Restaurant.create({
+            name: restaurantName,
+            ownerId: null,
+            subscriptionPlan: plan,
+            subscriptionStatus: 'Pending Payment',
+            isActive: false,
+            orderRadiusMeters,
+            geoLocation: { latitude, longitude }
+        });
+
+        const branch = await Branch.create({
+            restaurantId: restaurant._id,
+            name: 'Main Branch',
+            location: { address },
+            contact: { phone, email }
+        });
+
+        const user = await User.create({
+            name: ownerName,
+            email: email || undefined,
+            phone,
+            password,
+            role: role._id,
+            restaurantId: restaurant._id,
+            branchId: branch._id,
+            status: 'Active'
+        });
+
+        restaurant.ownerId = user._id;
+        await restaurant.save();
+
+        const planPrices = { Basic: 999, Pro: 1999, Premium: 2999, Enterprise: 4999 };
+        const subscription = await Subscription.create({
+            restaurantId: restaurant._id,
+            plan,
+            status: 'Pending Payment',
+            amount: planPrices[plan] || planPrices.Basic,
+            currency: 'INR'
+        });
+
+        const token = user.getSignedJwtToken();
+        res.status(201).json({
+            success: true,
+            token,
+            data: {
+                user: mapUserResponse(user, role.name),
+                restaurant,
+                branch,
+                subscription,
+                nextStep: 'PAYMENT_REQUIRED'
+            }
+        });
+    } catch (error) {
+        if (error?.code === 11000) return res.status(409).json({ success: false, message: 'Restaurant owner or branch already exists' });
+        next(error);
+    }
+};
 // @desc    Login user
 // @route   POST /api/v1/auth/login
 // @access  Public
@@ -222,11 +305,19 @@ exports.login = async (req, res, next) => {
         }
 
         const token = user.getSignedJwtToken();
+        const restaurant = user.restaurantId ? await Restaurant.findById(user.restaurantId).lean() : null;
+        const responseUser = {
+            ...mapUserResponse(user, user.role.name),
+            subscriptionStatus: restaurant?.subscriptionStatus || '',
+            subscriptionPlan: restaurant?.subscriptionPlan || '',
+            subscriptionExpiresAt: restaurant?.subscriptionExpiresAt || null,
+            restaurantIsActive: restaurant?.isActive === true
+        };
 
         res.status(200).json({
             success: true,
             token,
-            data: mapUserResponse(user, user.role.name)
+            data: responseUser
         });
     } catch (error) {
         next(error);

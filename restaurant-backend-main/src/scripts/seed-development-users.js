@@ -20,6 +20,7 @@ const accounts = [
     { name: 'TasteHub Cashier', email: 'cashier@tastehub.dev', phone: '9000000003', role: 'Cashier' },
     { name: 'TasteHub Kitchen', email: 'kitchen@tastehub.dev', phone: '9000000004', role: 'Kitchen' },
     { name: 'TasteHub Waiter', email: 'waiter@tastehub.dev', phone: '9000000005', role: 'Waiter' },
+    { name: 'Platform Super Admin', email: 'superadmin@tastehub.dev', phone: '9000000000', role: 'Super Admin' },
 ];
 
 async function ensureUser(account, role, restaurantId, branchId) {
@@ -97,7 +98,13 @@ async function seed() {
     }
 
     for (const account of accounts) {
-        await ensureUser(account, roles[account.role], restaurant._id, branch._id);
+        const globalAccount = account.role === 'Super Admin';
+        await ensureUser(
+            account,
+            roles[account.role],
+            globalAccount ? null : restaurant._id,
+            globalAccount ? null : branch._id,
+        );
     }
 
     console.log('\nTasteHub development accounts are ready:');
