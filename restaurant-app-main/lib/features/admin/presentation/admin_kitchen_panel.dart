@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/network/restaurant_api.dart';
+import '../../../core/theme/hospitality_theme.dart';
 
 class AdminKitchenPanel extends StatefulWidget {
   const AdminKitchenPanel({
@@ -224,7 +225,7 @@ class _AdminKitchenPanelState extends State<AdminKitchenPanel> {
                           height: 29,
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFE7D6),
+                            color: const Color(0xFFFFF1D6),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -248,7 +249,7 @@ class _AdminKitchenPanelState extends State<AdminKitchenPanel> {
                                   extras,
                                   style: const TextStyle(
                                     fontSize: 12,
-                                    color: Color(0xFF806E64),
+                                    color: Color(0xFF667085),
                                   ),
                                 ),
                               if ('${item['notes'] ?? ''}'.isNotEmpty)
@@ -290,7 +291,7 @@ class _AdminKitchenPanelState extends State<AdminKitchenPanel> {
                             height: 17,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white,
+                              color: HospitalityColors.surface,
                             ),
                           )
                         : Icon(
@@ -348,10 +349,10 @@ class _AdminKitchenPanelState extends State<AdminKitchenPanel> {
     _ => const Color(0xFFE5A12B),
   };
   BoxDecoration _decoration({Color? border}) => BoxDecoration(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(18),
+    color: HospitalityColors.surface,
+    borderRadius: BorderRadius.circular(HospitalityRadius.medium),
     border: Border.all(
-      color: border ?? const Color(0xFFECE2D9),
+      color: border ?? HospitalityColors.outline,
       width: border == null ? 1 : 1.5,
     ),
   );

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/network/restaurant_api.dart';
+import '../../../core/theme/hospitality_theme.dart';
 
 class AdminWaiterPanel extends StatefulWidget {
   const AdminWaiterPanel({
@@ -224,7 +225,7 @@ class _AdminWaiterPanelState extends State<AdminWaiterPanel> {
                 child: Text(
                   'Nothing pending.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Color(0xFF806E64)),
+                  style: TextStyle(color: Color(0xFF667085)),
                 ),
               )
             else
@@ -243,7 +244,7 @@ class _AdminWaiterPanelState extends State<AdminWaiterPanel> {
         : '';
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: const Color(0xFFFFE7D6),
+        backgroundColor: const Color(0xFFFFF1D6),
         child: Icon(
           _requestIcon('${r['type']}'),
           color: const Color(0xFFD66A2C),
@@ -378,9 +379,9 @@ class _AdminWaiterPanelState extends State<AdminWaiterPanel> {
   }
 
   BoxDecoration _box() => BoxDecoration(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(18),
-    border: Border.all(color: const Color(0xFFECE2D9)),
+    color: HospitalityColors.surface,
+    borderRadius: BorderRadius.circular(HospitalityRadius.medium),
+    border: Border.all(color: const Color(0xFFE6DED2)),
   );
   void _message(String text) => ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(content: Text(text), behavior: SnackBarBehavior.floating),

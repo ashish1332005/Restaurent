@@ -5,6 +5,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'core/network/api_client.dart';
 import 'core/router/app_router.dart';
 import 'core/storage/local_storage.dart';
+import 'core/theme/hospitality_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +23,7 @@ class RestaurantApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Restaurant App',
       debugShowCheckedModeBanner: false,
+      theme: HospitalityTheme.light,
       routerConfig: ref.watch(appRouterProvider),
     );
   }

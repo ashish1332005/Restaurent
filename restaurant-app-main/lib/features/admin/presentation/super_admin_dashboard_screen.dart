@@ -137,7 +137,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                         width: 72,
                         decoration: BoxDecoration(
                           color: selected == index
-                              ? const Color(0xFFFFE7D6)
+                              ? const Color(0xFFFFF1D6)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(14),
                         ),
@@ -148,7 +148,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                               icons[index],
                               color: selected == index
                                   ? saffron
-                                  : const Color(0xFF806E64),
+                                  : const Color(0xFF667085),
                             ),
                             const SizedBox(height: 3),
                             Text(
@@ -214,7 +214,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                 color: ink,
               ),
             ),
-            Text(_subtitle(), style: const TextStyle(color: Color(0xFF806E64))),
+            Text(_subtitle(), style: const TextStyle(color: Color(0xFF667085))),
           ],
         ),
       ),
@@ -554,7 +554,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                     ),
                     const Text(
                       'per month',
-                      style: TextStyle(color: Color(0xFF806E64)),
+                      style: TextStyle(color: Color(0xFF667085)),
                     ),
                     const Divider(height: 28),
                     ...(plan['features'] as List<String>).map(
@@ -660,7 +660,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
         Row(
           children: [
             CircleAvatar(
-              backgroundColor: const Color(0xFFFFE7D6),
+              backgroundColor: const Color(0xFFFFF1D6),
               child: const Icon(Icons.restaurant, color: saffron),
             ),
             const SizedBox(width: 11),
@@ -689,11 +689,11 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
         ),
         Text(
           '${r['branchCount'] ?? 0} branches · ${r['staffCount'] ?? 0} staff',
-          style: const TextStyle(color: Color(0xFF806E64)),
+          style: const TextStyle(color: Color(0xFF667085)),
         ),
         Text(
           'Expires: ${_date(r['subscriptionExpiresAt'])}',
-          style: const TextStyle(color: Color(0xFF806E64)),
+          style: const TextStyle(color: Color(0xFF667085)),
         ),
         const SizedBox(height: 12),
         SizedBox(
@@ -926,7 +926,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(color: Color(0xFF806E64))),
+              Text(title, style: const TextStyle(color: Color(0xFF667085))),
               Text(
                 value,
                 style: GoogleFonts.playfairDisplay(
@@ -936,7 +936,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
               ),
               Text(
                 note,
-                style: const TextStyle(fontSize: 12, color: Color(0xFF806E64)),
+                style: const TextStyle(fontSize: 12, color: Color(0xFF667085)),
               ),
             ],
           ),
@@ -1045,7 +1045,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
   BoxDecoration _box() => BoxDecoration(
     color: Colors.white,
     borderRadius: BorderRadius.circular(18),
-    border: Border.all(color: const Color(0xFFECE2D9)),
+    border: Border.all(color: const Color(0xFFE6DED2)),
   );
   Future<void> _logout() async {
     await LocalStorage.clearToken();
@@ -1071,7 +1071,7 @@ class _Empty extends StatelessWidget {
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: const TextStyle(color: Color(0xFF806E64)),
+        style: const TextStyle(color: Color(0xFF667085)),
       ),
     ),
   );
