@@ -209,8 +209,17 @@ exports.registerRestaurantOwner = async (req, res, next) => {
         if (!/^\d{10}$/.test(phone)) return res.status(400).json({ success: false, message: 'Please provide a valid 10-digit mobile number' });
         if (password.length < 6 || password.length > 72) return res.status(400).json({ success: false, message: 'Password must be between 6 and 72 characters' });
 
-        const role = await Role.findOne({ name: 'Restaurant Admin' });
-        if (!role) return res.status(503).json({ success: false, message: 'Restaurant Admin role is not configured' });
+        // Signup must work on a fresh database, without requiring the
+        // development seed to have been run first.
+        let role = await Role.findOne({ name: 'Restaurant Admin', restaurantId: null });
+        if (!role) {
+            role = await Role.create({
+                name: 'Restaurant Admin',
+                restaurantId: null,
+                isSystemRole: true,
+                permissions: []
+            });
+        }
 
         const existingUser = await User.findOne({ $or: [{ phone }, ...(email ? [{ email }] : [])] });
         if (existingUser) return res.status(409).json({ success: false, message: 'Owner account already exists' });
