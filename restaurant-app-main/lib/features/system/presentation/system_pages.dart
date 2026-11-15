@@ -528,6 +528,21 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                                     ),
                             ),
                             const SizedBox(height: 24),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                TextButton(
+                                  onPressed: () => context.push('/legal/terms'),
+                                  child: const Text('Terms'),
+                                ),
+                                const Text('·'),
+                                TextButton(
+                                  onPressed: () => context.push('/legal/privacy'),
+                                  child: const Text('Privacy'),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
                           ],
                         ),
                       ),
@@ -654,30 +669,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           ),
         ],
       ),
-    );
-  }
-                          const SizedBox(height: 18),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              TextButton(
-                                onPressed: () => context.push('/legal/terms'),
-                                child: const Text('Terms'),
-                              ),
-                              const Text('·'),
-                              TextButton(
-                                onPressed: () => context.push('/legal/privacy'),
-                                child: const Text('Privacy'),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
     );
   }
 
