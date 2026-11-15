@@ -146,87 +146,199 @@ class AdminOperationsPanel extends StatelessWidget {
               order['status'] != 'Cancelled',
         )
         .length;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _operationsHero(
-          title: 'Live service',
-          subtitle: 'Track every order from acceptance to payment.',
-          badges: [
-            _serviceBadge('Active', active, HospitalityColors.turmeric),
-            _serviceBadge('Ready', ready, const Color(0xFF62C58B)),
-            _serviceBadge('Unpaid', unpaid, const Color(0xFFFF9C8F)),
-          ],
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(18, 14, 18, 28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 0),
-              if (orders.isEmpty)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 42,
-                    horizontal: 20,
-                  ),
-                  decoration: BoxDecoration(
-                    color: HospitalityColors.surface,
-                    borderRadius: BorderRadius.circular(
-                      HospitalityRadius.medium,
+    final qrOrders = orders
+        .where((order) => order['source'] == 'CustomerQR')
+        .length;
+
+    String selectedFilter = 'All';
+
+    return StatefulBuilder(
+      builder: (context, setOrderFilter) {
+        final filtered = orders.where((order) {
+          final s = (order['status'] ?? '').toString();
+          final p = (order['paymentStatus'] ?? '').toString();
+          final src = (order['source'] ?? '').toString();
+          if (selectedFilter == 'All') return true;
+          if (selectedFilter == 'Active') return !['Paid', 'Cancelled'].contains(s);
+          if (selectedFilter == 'Ready') return s == 'Ready';
+          if (selectedFilter == 'Preparing') return s == 'Preparing';
+          if (selectedFilter == 'Served') return s == 'Served';
+          if (selectedFilter == 'Unpaid') return p != 'Paid' && s != 'Cancelled';
+          if (selectedFilter == 'QR') return src == 'CustomerQR';
+          return true;
+        }).toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _operationsHero(
+              title: 'Live service',
+              subtitle: 'Track every order from acceptance to payment.',
+              badges: [
+                _serviceBadge('Active', active, HospitalityColors.turmeric),
+                _serviceBadge('Ready', ready, const Color(0xFF62C58B)),
+                _serviceBadge('Unpaid', unpaid, const Color(0xFFFF9C8F)),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _orderFilterChip(
+                          label: 'All (${orders.length})',
+                          value: 'All',
+                          isSelected: selectedFilter == 'All',
+                          onTap: () => setOrderFilter(() => selectedFilter = 'All'),
+                        ),
+                        _orderFilterChip(
+                          label: 'Active ($active)',
+                          value: 'Active',
+                          isSelected: selectedFilter == 'Active',
+                          onTap: () => setOrderFilter(() => selectedFilter = 'Active'),
+                        ),
+                        _orderFilterChip(
+                          label: 'Ready ($ready)',
+                          value: 'Ready',
+                          isSelected: selectedFilter == 'Ready',
+                          onTap: () => setOrderFilter(() => selectedFilter = 'Ready'),
+                        ),
+                        _orderFilterChip(
+                          label: 'Preparing',
+                          value: 'Preparing',
+                          isSelected: selectedFilter == 'Preparing',
+                          onTap: () => setOrderFilter(() => selectedFilter = 'Preparing'),
+                        ),
+                        _orderFilterChip(
+                          label: 'Served',
+                          value: 'Served',
+                          isSelected: selectedFilter == 'Served',
+                          onTap: () => setOrderFilter(() => selectedFilter = 'Served'),
+                        ),
+                        _orderFilterChip(
+                          label: 'Unpaid ($unpaid)',
+                          value: 'Unpaid',
+                          isSelected: selectedFilter == 'Unpaid',
+                          onTap: () => setOrderFilter(() => selectedFilter = 'Unpaid'),
+                        ),
+                        if (qrOrders > 0)
+                          _orderFilterChip(
+                            label: '📱 QR Orders ($qrOrders)',
+                            value: 'QR',
+                            isSelected: selectedFilter == 'QR',
+                            onTap: () => setOrderFilter(() => selectedFilter = 'QR'),
+                          ),
+                      ],
                     ),
-                    border: Border.all(color: HospitalityColors.outline),
                   ),
-                  child: Column(
-                    children: [
-                      const Icon(
-                        Icons.receipt_long_outlined,
-                        size: 38,
-                        color: HospitalityColors.saffron,
+                  const SizedBox(height: 14),
+                  if (filtered.isEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 42,
+                        horizontal: 20,
                       ),
-                      const SizedBox(height: 10),
-                      Text(
-                        'No orders yet',
-                        style: Theme.of(context).textTheme.titleMedium,
+                      decoration: BoxDecoration(
+                        color: HospitalityColors.surface,
+                        borderRadius: BorderRadius.circular(
+                          HospitalityRadius.medium,
+                        ),
+                        border: Border.all(color: HospitalityColors.outline),
                       ),
-                      Text(
-                        'New QR, waiter and POS orders will appear here.',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodySmall,
+                      child: Column(
+                        children: [
+                          const Icon(
+                            Icons.receipt_long_outlined,
+                            size: 38,
+                            color: HospitalityColors.saffron,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'No matching orders found',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          Text(
+                            'Try selecting another filter above.',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                )
-              else
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final columns = constraints.maxWidth >= 1080
-                        ? 3
-                        : constraints.maxWidth >= 680
-                        ? 2
-                        : 1;
-                    final gap = 12.0;
-                    final width =
-                        (constraints.maxWidth - gap * (columns - 1)) / columns;
-                    return Wrap(
-                      spacing: gap,
-                      runSpacing: gap,
-                      children: orders
-                          .map(
-                            (order) => SizedBox(
-                              width: width,
-                              child: _liveOrderCard(context, order),
-                            ),
-                          )
-                          .toList(),
-                    );
-                  },
-                ),
-            ],
+                    )
+                  else
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final columns = constraints.maxWidth >= 1080
+                            ? 3
+                            : constraints.maxWidth >= 680
+                            ? 2
+                            : 1;
+                        final gap = 12.0;
+                        final width =
+                            (constraints.maxWidth - gap * (columns - 1)) / columns;
+                        return Wrap(
+                          spacing: gap,
+                          runSpacing: gap,
+                          children: filtered
+                              .map(
+                                (order) => SizedBox(
+                                  width: width,
+                                  child: _liveOrderCard(context, order),
+                                ),
+                              )
+                              .toList(),
+                        );
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _orderFilterChip({
+    required String label,
+    required String value,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Material(
+        color: isSelected ? HospitalityColors.ink : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: isSelected ? HospitalityColors.ink : const Color(0xFFE2E8F0),
           ),
         ),
-      ],
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            child: Text(
+              label,
+              style: GoogleFonts.dmSans(
+                color: isSelected ? Colors.white : const Color(0xFF334155),
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -358,124 +470,423 @@ class AdminOperationsPanel extends StatelessWidget {
         .whereType<Map>()
         .toList();
     final color = _orderStatusColor(status);
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: Colors.white,
+
+    final source = (order['source'] ?? '').toString();
+    final userObj = order['userId'];
+    final userName = userObj is Map ? (userObj['name'] ?? '').toString() : '';
+    final String taker;
+    final IconData takerIcon;
+    final Color takerColor;
+
+    if (source == 'CustomerQR') {
+      taker = 'QR Self-Order';
+      takerIcon = Icons.qr_code_2_rounded;
+      takerColor = const Color(0xFF2563EB);
+    } else if (source == 'CustomerApp') {
+      taker = 'Customer App';
+      takerIcon = Icons.phone_android_rounded;
+      takerColor = const Color(0xFF7C3AED);
+    } else if (userName.isNotEmpty) {
+      taker = '$userName (${source.isNotEmpty ? source : 'Waiter'})';
+      takerIcon = Icons.badge_outlined;
+      takerColor = const Color(0xFFD97706);
+    } else if (source.isNotEmpty) {
+      taker = '$source Order';
+      takerIcon = Icons.person_outline_rounded;
+      takerColor = const Color(0xFF475569);
+    } else {
+      taker = 'Staff Order';
+      takerIcon = Icons.room_service_rounded;
+      takerColor = const Color(0xFF475569);
+    }
+
+    final created = DateTime.tryParse(order['createdAt']?.toString() ?? '')?.toLocal();
+    final updated = DateTime.tryParse(order['updatedAt']?.toString() ?? '')?.toLocal();
+    final now = DateTime.now();
+    String timeBadge = '';
+    Color timeBadgeColor = const Color(0xFF64748B);
+
+    if (created != null) {
+      final elapsedMins = now.difference(created).inMinutes;
+      if (['Served', 'Paid'].contains(status)) {
+        if (updated != null && updated.isAfter(created)) {
+          final totalMins = updated.difference(created).inMinutes;
+          timeBadge = 'Delivered in ${totalMins > 0 ? '$totalMins min' : '<1 min'}';
+          timeBadgeColor = const Color(0xFF16A34A);
+        } else {
+          timeBadge = 'Served';
+          timeBadgeColor = const Color(0xFF16A34A);
+        }
+      } else if (status == 'Cancelled') {
+        timeBadge = 'Cancelled';
+        timeBadgeColor = const Color(0xFFDC2626);
+      } else {
+        if (elapsedMins < 1) {
+          timeBadge = '<1 min';
+          timeBadgeColor = const Color(0xFF2563EB);
+        } else if (elapsedMins < 20) {
+          timeBadge = '$elapsedMins mins elapsed';
+          timeBadgeColor = const Color(0xFFD97706);
+        } else {
+          timeBadge = '⚠️ $elapsedMins mins (Delayed)';
+          timeBadgeColor = const Color(0xFFDC2626);
+        }
+      }
+    }
+
+    return Material(
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: RoyalAdminColors.line),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x12071A31),
-            blurRadius: 14,
-            offset: Offset(0, 5),
-          ),
-        ],
+        side: const BorderSide(color: RoyalAdminColors.line),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      child: InkWell(
+        onTap: () => _showOrderDetailsSheet(context, order, taker, timeBadge),
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.all(15),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(.1),
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                    child: Icon(Icons.receipt_long_rounded, color: color, size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          table,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        Text(
+                          'Order ' + _id(order['_id']),
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuButton<String>(
+                    tooltip: 'Update order status',
+                    onSelected: (value) => _orderStatus(context, order, value),
+                    itemBuilder: (_) =>
+                        [
+                              'Accepted',
+                              'Preparing',
+                              'Ready',
+                              'Served',
+                              'Bill Requested',
+                              'Cancelled',
+                            ]
+                            .map(
+                              (value) =>
+                                  PopupMenuItem(value: value, child: Text(value)),
+                            )
+                            .toList(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
               Container(
-                width: 38,
-                height: 38,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: .1),
-                  borderRadius: BorderRadius.circular(11),
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
-                child: Icon(Icons.receipt_long_rounded, color: color, size: 20),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    Text(
-                      table,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleMedium,
+                    Icon(takerIcon, size: 14, color: takerColor),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'By: $taker',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF334155),
+                        ),
+                      ),
                     ),
-                    Text(
-                      'Order ' + _id(order['_id']),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
+                    if (timeBadge.isNotEmpty) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: timeBadgeColor.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              ['Served', 'Paid'].contains(status)
+                                  ? Icons.check_circle_outline_rounded
+                                  : Icons.schedule_rounded,
+                              size: 11,
+                              color: timeBadgeColor,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              timeBadge,
+                              style: GoogleFonts.dmSans(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: timeBadgeColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
-              PopupMenuButton<String>(
-                tooltip: 'Update order status',
-                onSelected: (value) => _orderStatus(context, order, value),
-                itemBuilder: (_) =>
-                    [
-                          'Accepted',
-                          'Preparing',
-                          'Ready',
-                          'Served',
-                          'Bill Requested',
-                          'Cancelled',
-                        ]
-                        .map(
-                          (value) =>
-                              PopupMenuItem(value: value, child: Text(value)),
-                        )
-                        .toList(),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            customer + ' - ' + items.length.toString() + ' line items',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          if (items.isNotEmpty) ...[
-            const SizedBox(height: 7),
-            Text(
-              items
-                  .take(2)
-                  .map((raw) {
-                    final menuItem = raw['menuItem'];
-                    final name = menuItem is Map
-                        ? (menuItem['name'] ?? 'Menu item')
-                        : 'Menu item';
-                    return (raw['quantity'] ?? 1).toString() +
-                        'x ' +
-                        name.toString();
-                  })
-                  .join(', '),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-          const SizedBox(height: 13),
-          Row(
-            children: [
-              Expanded(
-                child: Wrap(
-                  spacing: 6,
-                  runSpacing: 5,
-                  children: [
-                    _orderChip(status, color),
-                    _orderChip(
-                      payment,
-                      payment == 'Paid'
-                          ? HospitalityColors.leaf
-                          : HospitalityColors.saffron,
-                    ),
-                  ],
-                ),
-              ),
+              const SizedBox(height: 10),
               Text(
-                'Rs ' + (order['total'] ?? 0).toString(),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: HospitalityColors.saffronDark,
+                customer + ' - ' + items.length.toString() + ' line items',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              if (items.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  items
+                      .take(2)
+                      .map((raw) {
+                        final menuItem = raw['menuItem'];
+                        final name = menuItem is Map
+                            ? (menuItem['name'] ?? 'Menu item')
+                            : 'Menu item';
+                        return (raw['quantity'] ?? 1).toString() +
+                            'x ' +
+                            name.toString();
+                      })
+                      .join(', '),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 5,
+                      children: [
+                        _orderChip(status, color),
+                        _orderChip(
+                          payment,
+                          payment == 'Paid'
+                              ? HospitalityColors.leaf
+                              : HospitalityColors.saffron,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    'Rs ' + (order['total'] ?? 0).toString(),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: HospitalityColors.saffronDark,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showOrderDetailsSheet(
+    BuildContext context,
+    Map<String, dynamic> order,
+    String taker,
+    String timeBadge,
+  ) {
+    HapticFeedback.lightImpact();
+    final status = (order['status'] ?? 'Pending').toString();
+    final payment = (order['paymentStatus'] ?? 'Unpaid').toString();
+    final tableData = order['tableId'];
+    final table = tableData is Map
+        ? (tableData['name'] ?? 'Table').toString()
+        : (order['orderType'] ?? 'Takeaway').toString();
+    final customer = (order['customerName'] ?? 'Guest').toString();
+    final phone = (order['customerPhone'] ?? '').toString();
+    final items = (order['items'] as List? ?? const []).whereType<Map>().toList();
+    final color = _orderStatusColor(status);
+    final total = (order['total'] ?? 0).toString();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => DraggableScrollableSheet(
+        initialChildSize: 0.75,
+        minChildSize: 0.4,
+        maxChildSize: 0.95,
+        builder: (_, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 16, 10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '$table · Order ${_id(order['_id'])}',
+                            style: GoogleFonts.playfairDisplay(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Customer: $customer ${phone.isNotEmpty ? '($phone)' : ''}',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 13,
+                              color: const Color(0xFF64748B),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(sheetContext),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(18),
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.badge_outlined, size: 16, color: Color(0xFFD97706)),
+                              const SizedBox(width: 8),
+                              const Text('Taken by:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                              const Spacer(),
+                              Text(taker, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
+                            ],
+                          ),
+                          const Divider(height: 16),
+                          Row(
+                            children: [
+                              const Icon(Icons.timer_outlined, size: 16, color: Color(0xFF2563EB)),
+                              const SizedBox(width: 8),
+                              const Text('Timing / Status:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                              const Spacer(),
+                              Text(timeBadge.isNotEmpty ? timeBadge : status, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: color)),
+                            ],
+                          ),
+                          const Divider(height: 16),
+                          Row(
+                            children: [
+                              const Icon(Icons.payments_outlined, size: 16, color: Color(0xFF16A34A)),
+                              const SizedBox(width: 8),
+                              const Text('Payment:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                              const Spacer(),
+                              Text(payment, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: payment == 'Paid' ? const Color(0xFF16A34A) : const Color(0xFFD97706))),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Text(
+                      'Ordered Items (${items.length})',
+                      style: GoogleFonts.dmSans(fontSize: 15, fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 8),
+                    ...items.map((raw) {
+                      final menuItem = raw['menuItem'];
+                      final name = menuItem is Map ? (menuItem['name'] ?? 'Dish') : 'Dish';
+                      final qty = raw['quantity'] ?? 1;
+                      final price = raw['price'] ?? 0;
+                      final itemTotal = (qty as num) * (price as num);
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: HospitalityColors.softSaffron,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text('${qty}x', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                name.toString(),
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                            Text('Rs $itemTotal', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                          ],
+                        ),
+                      );
+                    }),
+                    const Divider(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Grand Total', style: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.w800)),
+                        Text('Rs $total', style: GoogleFonts.dmSans(fontSize: 18, fontWeight: FontWeight.w800, color: HospitalityColors.saffronDark)),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }

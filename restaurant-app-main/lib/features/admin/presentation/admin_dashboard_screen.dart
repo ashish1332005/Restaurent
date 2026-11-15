@@ -289,7 +289,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     } else if (role == 'Cashier') {
       primary = const [5, 1, 3];
     } else {
-      primary = const [0, 5, 1, 3];
+      primary = const [0, 1, 2, 3];
     }
     final showMore = allowed.any((page) => !primary.contains(page));
     final selectedIndex = primary.contains(selected)
@@ -619,12 +619,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   child: Row(
                     children: [
                       _dashboardActionChip(
-                        icon: Icons.point_of_sale_rounded,
+                        icon: Icons.receipt_long_rounded,
                         color: HospitalityColors.saffron,
-                        label: 'Take Order',
+                        label: 'Live Orders',
                         onTap: () {
                           HapticFeedback.selectionClick();
-                          setState(() => selected = 5);
+                          setState(() => selected = 1);
                         },
                       ),
                       const SizedBox(width: 8),
@@ -639,6 +639,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       ),
                       const SizedBox(width: 8),
                       _dashboardActionChip(
+                        icon: Icons.restaurant_menu_rounded,
+                        color: const Color(0xFF21854A),
+                        label: 'Menu & Dishes',
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => selected = 2);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _dashboardActionChip(
                         icon: Icons.soup_kitchen_rounded,
                         color: const Color(0xFFD66A2C),
                         label: 'Kitchen KDS',
@@ -649,12 +659,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       ),
                       const SizedBox(width: 8),
                       _dashboardActionChip(
-                        icon: Icons.menu_book_rounded,
-                        color: const Color(0xFF21854A),
-                        label: 'Menu & Dishes',
+                        icon: Icons.analytics_rounded,
+                        color: const Color(0xFF7140C5),
+                        label: 'Reports & Revenue',
                         onTap: () {
                           HapticFeedback.selectionClick();
-                          setState(() => selected = 2);
+                          setState(() => selected = 10);
                         },
                       ),
                     ],
