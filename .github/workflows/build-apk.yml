@@ -38,7 +38,7 @@ jobs:
 
       - name: Build Android APK
         working-directory: restaurant-app-main
-        run: flutter build apk --release --android-skip-build-dependency-validation
+        run: flutter build apk --release --android-skip-build-dependency-validation --dart-define=API_BASE_URL=https://restaurent-2-xq6f.onrender.com/api/v1
 
       - name: Capture Failure Log
         if: failure()
