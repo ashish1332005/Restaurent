@@ -1,11 +1,26 @@
-﻿const User = require('../../models/User.model');
+﻿const mongoose = require('mongoose');
+const User = require('../../models/User.model');
 const Role = require('../../models/Role.model');
 const { assertBranchAccess, isSuperAdmin } = require('../../utils/access-scope');
 
 const getRequestedBranchId = (req) => req.body?.branchId || req.query?.branchId || req.user.branchId;
 
-const getAssignableRole = async (actor, roleId) => {
-    const role = await Role.findById(roleId).lean();
+const getAssignableRole = async (actor, roleIdentifier) => {
+    let role = null;
+    if (roleIdentifier && mongoose.Types.ObjectId.isValid(roleIdentifier)) {
+        role = await Role.findById(roleIdentifier).lean();
+    }
+    if (!role) {
+        role = await Role.findOne({ name: roleIdentifier }).lean();
+    }
+    if (!role && ['Kitchen', 'Waiter', 'Cashier', 'Manager'].includes(roleIdentifier)) {
+        role = await Role.create({
+            name: roleIdentifier,
+            restaurantId: null,
+            isSystemRole: true,
+            permissions: []
+        });
+    }
     if (!role) {
         const error = new Error('Role not found');
         error.statusCode = 400;
@@ -104,6 +119,18 @@ exports.updateUser = async (req, res, next) => {
 };
 exports.getAssignableRoles = async (req, res, next) => {
     try {
+        const defaultStaffRoles = ['Kitchen', 'Waiter', 'Cashier', 'Manager'];
+        for (const roleName of defaultStaffRoles) {
+            const exists = await Role.findOne({ name: roleName, restaurantId: null });
+            if (!exists) {
+                await Role.create({
+                    name: roleName,
+                    restaurantId: null,
+                    isSystemRole: true,
+                    permissions: []
+                });
+            }
+        }
         const prohibited = isSuperAdmin(req.user) ? ['Customer'] : req.user.role?.name === 'Manager' ? ['Super Admin', 'Restaurant Admin', 'Manager', 'Customer'] : ['Super Admin', 'Restaurant Admin', 'Customer'];
         const roles = await Role.find({ name: { $nin: prohibited }, $or: [{ restaurantId: null }, { restaurantId: req.user.restaurantId }] }).select('name permissions').sort({ name: 1 }).lean();
         res.status(200).json({ success: true, data: roles });

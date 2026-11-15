@@ -52,6 +52,16 @@ class _AdminStaffPanelState extends State<AdminStaffPanel> {
     }
   }
 
+  List<Map<String, dynamic>> get _effectiveRoles {
+    if (roles.isNotEmpty) return roles;
+    return const [
+      {'_id': 'Kitchen', 'name': 'Kitchen'},
+      {'_id': 'Waiter', 'name': 'Waiter'},
+      {'_id': 'Cashier', 'name': 'Cashier'},
+      {'_id': 'Manager', 'name': 'Manager'},
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final active = staff.where((u) => u['status'] == 'Active').length;
@@ -80,7 +90,7 @@ class _AdminStaffPanelState extends State<AdminStaffPanel> {
             _badge('Total', staff.length, const Color(0xFF3B74B9)),
             _badge('Active', active, const Color(0xFF2F8A61)),
             FilledButton.icon(
-              onPressed: roles.isEmpty ? null : () => _staffDialog(),
+              onPressed: () => _staffDialog(),
               icon: const Icon(Icons.person_add_alt_1),
               label: const Text('Add staff'),
             ),
@@ -115,7 +125,7 @@ class _AdminStaffPanelState extends State<AdminStaffPanel> {
                   labelText: 'Role',
                   border: OutlineInputBorder(),
                 ),
-                items: ['All', ...roles.map((r) => '${r['name']}')]
+                items: ['All', ..._effectiveRoles.map((r) => '${r['name']}')]
                     .map((v) => DropdownMenuItem(value: v, child: Text(v)))
                     .toList(),
                 onChanged: (v) => setState(() => roleFilter = v ?? 'All'),
@@ -261,9 +271,10 @@ class _AdminStaffPanelState extends State<AdminStaffPanel> {
         phone = TextEditingController(text: user?['phone']?.toString() ?? ''),
         email = TextEditingController(text: user?['email']?.toString() ?? ''),
         password = TextEditingController();
+    final availableRoles = _effectiveRoles;
     String? roleId = editing && user['role'] is Map
         ? '${user['role']['_id']}'
-        : null;
+        : '${availableRoles.first['_id']}';
     String status = '${user?['status'] ?? 'Active'}';
     final ok = await showDialog<bool>(
       context: context,
@@ -311,7 +322,7 @@ class _AdminStaffPanelState extends State<AdminStaffPanel> {
                   DropdownButtonFormField<String>(
                     initialValue: roleId,
                     decoration: const InputDecoration(labelText: 'Role'),
-                    items: roles
+                    items: availableRoles
                         .map(
                           (r) => DropdownMenuItem(
                             value: '${r['_id']}',
