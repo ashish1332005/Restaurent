@@ -2247,7 +2247,6 @@ class AdminOperationsPanel extends StatelessWidget {
                             onChanged: (value) {
                               setDialogState(() {
                                 itemType = value ?? 'Dish';
-                                isThali = itemType == 'Thali';
                               });
                             },
                           ),

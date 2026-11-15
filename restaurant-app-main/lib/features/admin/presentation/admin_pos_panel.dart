@@ -47,7 +47,7 @@ class _AdminPosPanelState extends State<AdminPosPanel> {
     final existing = cart[key];
     final price = (item['basePrice'] as num? ?? 0).toDouble();
     if (existing != null) {
-      setState(() => existing.quantity += 1);
+      setState(() => cart[key] = existing.copyWith(existing.quantity + 1));
     } else {
       setState(() {
         cart[key] = _PosLine(
