@@ -135,6 +135,52 @@
       margin-top: 8px;
     }
 
+    /* Top Guest Phone & Name Strip */
+    .guest-strip {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      display: flex;
+      gap: 10px;
+    }
+
+    .guest-field {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      padding: 8px 12px;
+      transition: all 0.2s;
+    }
+
+    .guest-field:focus-within {
+      background: rgba(255, 255, 255, 0.16);
+      border-color: #F59E0B;
+      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
+    }
+
+    .guest-icon {
+      font-size: 15px;
+    }
+
+    .guest-field input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 600;
+      width: 100%;
+    }
+
+    .guest-field input::placeholder {
+      color: #A1A1AA;
+      font-weight: 400;
+    }
+
     /* Live Active Order Banner */
     .active-order-banner {
       margin: 14px 16px 4px;
@@ -826,6 +872,18 @@
         </div>
       </div>
     </div>
+
+    <!-- Top Guest Mobile & Name Bar -->
+    <div class="guest-strip">
+      <div class="guest-field">
+        <span class="guest-icon">📱</span>
+        <input type="tel" id="topPhone" placeholder="Enter Mobile Number (10 digits)" maxlength="10" oninput="syncPhone(this.value)" />
+      </div>
+      <div class="guest-field" style="max-width: 140px;">
+        <span class="guest-icon">👤</span>
+        <input type="text" id="topName" placeholder="Your Name" oninput="syncName(this.value)" />
+      </div>
+    </div>
   </header>
 
   <!-- Active Live Order Alert Banner (Shows when order exists) -->
@@ -933,11 +991,11 @@
       <!-- Customer Details -->
       <div class="form-group">
         <label>Your Name *</label>
-        <input type="text" id="custName" placeholder="Enter guest name" />
+        <input type="text" id="custName" placeholder="Enter guest name" oninput="syncName(this.value)" />
       </div>
       <div class="form-group">
         <label>10-digit Mobile Number *</label>
-        <input type="tel" id="custPhone" placeholder="9876543210" maxlength="10" />
+        <input type="tel" id="custPhone" placeholder="9876543210" maxlength="10" oninput="syncPhone(this.value)" />
       </div>
 
       <button class="btn-main-cta" id="placeOrderBtn" onclick="placeOrder()">
@@ -964,7 +1022,31 @@
   </div>
 
   <script>
-    const tableCode = window.location.pathname.split('/').filter(Boolean).pop() || '';
+    function resolveTableCode() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const fromQuery = urlParams.get('table') || urlParams.get('token') || urlParams.get('code') || urlParams.get('t') || urlParams.get('tableCode');
+        if (fromQuery && fromQuery.trim()) return fromQuery.trim();
+
+        const hash = window.location.hash || '';
+        const matchHash = hash.match(/(?:table|token|code)[\/=]([^\/?#&]+)/i);
+        if (matchHash && matchHash[1]) return matchHash[1].trim();
+
+        const parts = window.location.pathname.split('/').filter(Boolean);
+        const last = parts.pop() || '';
+        if (last && !['table', 'menu', 'order', 'menu.html', 'index.html', 'restaurent'].includes(last.toLowerCase())) {
+          return last;
+        }
+      } catch (e) {}
+      return 'default';
+    }
+
+    const API_BASE = (window.location.hostname.includes('github.io') || window.location.protocol === 'file:')
+      ? 'https://restaurent-2-xq6f.onrender.com/api/v1'
+      : '/api/v1';
+
+    let tableCode = resolveTableCode();
+    let currentTable = null;
     let menuData = [];
     let categories = [];
     let cart = {}; // { itemId: { item, qty } }
@@ -995,6 +1077,24 @@
       return fallbackImages.default;
     }
 
+    function syncPhone(val) {
+      val = (val || '').replace(/\D/g, '').slice(0, 10);
+      const top = document.getElementById('topPhone');
+      if (top && top.value !== val) top.value = val;
+      const cp = document.getElementById('custPhone');
+      if (cp && cp.value !== val) cp.value = val;
+      try { localStorage.setItem('resto_phone', val); } catch (e) {}
+    }
+
+    function syncName(val) {
+      val = val || '';
+      const top = document.getElementById('topName');
+      if (top && top.value !== val) top.value = val;
+      const cn = document.getElementById('custName');
+      if (cn && cn.value !== val) cn.value = val;
+      try { localStorage.setItem('resto_name', val); } catch (e) {}
+    }
+
     // App Startup
     window.addEventListener('DOMContentLoaded', async () => {
       loadSavedSession();
@@ -1009,22 +1109,32 @@
       try {
         const saved = localStorage.getItem('resto_session_' + tableCode);
         if (saved) activeSession = JSON.parse(saved);
-        const name = localStorage.getItem('resto_name');
-        const phone = localStorage.getItem('resto_phone');
-        if (name) document.getElementById('custName').value = name;
-        if (phone) document.getElementById('custPhone').value = phone;
+        const name = localStorage.getItem('resto_name') || '';
+        const phone = localStorage.getItem('resto_phone') || '';
+        if (name) syncName(name);
+        if (phone) syncPhone(phone);
       } catch (e) {}
     }
 
     async function fetchTableAndMenu() {
+      const container = document.getElementById('menuContainer');
       try {
-        const res = await fetch('/api/v1/qr/table/' + encodeURIComponent(tableCode));
+        const codeParam = (tableCode && tableCode !== 'default') ? encodeURIComponent(tableCode) : 'default';
+        let res;
+        try {
+          res = await fetch(API_BASE + '/qr/table/' + codeParam);
+        } catch (netErr) {
+          // Direct fallback to live Render backend
+          res = await fetch('https://restaurent-2-xq6f.onrender.com/api/v1/qr/table/' + codeParam);
+        }
         const json = await res.json();
         if (!json.success) {
-          document.getElementById('menuContainer').innerHTML = `
+          container.innerHTML = `
             <div style="text-align:center; padding:50px 20px; color:#DC2626;">
-              <h3 style="font-size:20px; font-weight:800; margin-bottom:8px;">QR Code Expired or Table Not Found</h3>
+              <div style="font-size:36px; margin-bottom:10px;">⚠️</div>
+              <h3 style="font-size:20px; font-weight:800; margin-bottom:8px;">Table QR Not Active</h3>
               <p style="color:var(--gray-500); font-size:14px;">${json.message || 'Please ask the waiter to activate this table.'}</p>
+              <button onclick="fetchTableAndMenu()" style="margin-top:16px; padding:10px 20px; background:#EA580C; color:#fff; border:none; border-radius:12px; font-weight:700; cursor:pointer;">🔄 Retry Loading Dishes</button>
             </div>
           `;
           return;
@@ -1032,18 +1142,29 @@
 
         const data = json.data;
         restaurantData = data;
+        if (data.table) {
+          currentTable = data.table;
+          if (data.table.qrToken) {
+            tableCode = data.table.qrToken;
+          } else if (data.table._id) {
+            tableCode = data.table._id;
+          }
+        }
         document.getElementById('restaurantName').innerText = data.restaurant?.name || 'Grand Hotel & Restaurant';
         document.getElementById('branchName').innerText = data.branch?.name || 'Dine-In';
-        document.getElementById('tableText').innerText = data.table?.name || 'Table';
+        document.getElementById('tableText').innerText = data.table?.name ? ('Table ' + data.table.name) : 'Table 1';
 
         menuData = data.menu || [];
         extractCategories();
         renderMenu();
       } catch (err) {
-        document.getElementById('menuContainer').innerHTML = `
+        console.error('Fetch menu error:', err);
+        container.innerHTML = `
           <div style="text-align:center; padding:50px 20px; color:#DC2626;">
-            <strong>Network Error</strong>
-            <p style="color:var(--gray-500); font-size:13px; margin-top:4px;">Please check your Wi-Fi or mobile data connection.</p>
+            <div style="font-size:36px; margin-bottom:10px;">📡</div>
+            <strong style="font-size:18px;">Connecting to Kitchen...</strong>
+            <p style="color:var(--gray-500); font-size:13px; margin:8px 0 16px;">Render server waking up. Please tap retry.</p>
+            <button onclick="fetchTableAndMenu()" style="padding:12px 24px; background:#EA580C; color:#fff; border:none; border-radius:12px; font-weight:800; cursor:pointer; box-shadow:0 4px 12px rgba(234,88,12,0.3);">🔄 Load Menu Dishes</button>
           </div>
         `;
       }
@@ -1259,7 +1380,7 @@
           headers['x-table-session-token'] = activeSession.sessionToken;
         }
 
-        const res = await fetch('/api/v1/qr/table/' + encodeURIComponent(tableCode) + '/order', {
+        const res = await fetch(API_BASE + '/qr/table/' + encodeURIComponent(tableCode) + '/order', {
           method: 'POST',
           headers,
           body: JSON.stringify({
@@ -1303,7 +1424,7 @@
     async function pollOrderStatus() {
       if (!activeSession || !activeSession.sessionToken) return;
       try {
-        const res = await fetch('/api/v1/qr/table/' + encodeURIComponent(tableCode) + '/order-status', {
+        const res = await fetch(API_BASE + '/qr/table/' + encodeURIComponent(tableCode) + '/order-status', {
           headers: { 'x-table-session-token': activeSession.sessionToken }
         });
         const json = await res.json();
@@ -1334,7 +1455,7 @@
         return;
       }
       try {
-        const res = await fetch('/api/v1/qr/table/' + encodeURIComponent(tableCode) + '/request', {
+        const res = await fetch(API_BASE + '/qr/table/' + encodeURIComponent(tableCode) + '/request', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1359,7 +1480,7 @@
         return;
       }
       try {
-        const res = await fetch('/api/v1/qr/table/' + encodeURIComponent(tableCode) + '/order-status', {
+        const res = await fetch(API_BASE + '/qr/table/' + encodeURIComponent(tableCode) + '/order-status', {
           headers: { 'x-table-session-token': activeSession.sessionToken }
         });
         const json = await res.json();
