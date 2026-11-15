@@ -30,7 +30,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     (Icons.restaurant_menu_rounded, 'Menu'),
     (Icons.table_restaurant_rounded, 'Tables'),
     (Icons.soup_kitchen_rounded, 'Kitchen'),
-    (Icons.point_of_sale_rounded, 'POS'),
+    (Icons.point_of_sale_rounded, 'Take Order'),
     (Icons.room_service_rounded, 'Waiter'),
     (Icons.inventory_2_rounded, 'Inventory'),
     (Icons.groups_rounded, 'Staff'),
@@ -61,8 +61,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   List<int> _allowedPages(String value) => switch (value) {
     'Kitchen' => const [4, 7],
-    'Waiter' => const [1, 6],
-    'Cashier' => const [1, 5],
+    'Waiter' => const [5, 1, 3, 6],
+    'Cashier' => const [5, 1],
     'Admin' ||
     'Restaurant Admin' ||
     'Manager' ||
