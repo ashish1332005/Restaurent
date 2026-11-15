@@ -63,12 +63,15 @@ if (process.env.NODE_ENV === 'development') {
 app.use(express.static(path.resolve(__dirname, '../public')));
 
 // Serve Customer Mobile Web Menu for scanned QR tables
-app.get('/table/:tableCode', (req, res) => {
+const serveMenuHtml = (req, res) => {
     res.sendFile(path.resolve(__dirname, '../public/menu.html'));
-});
-app.get('/menu/:tableCode', (req, res) => {
-    res.sendFile(path.resolve(__dirname, '../public/menu.html'));
-});
+};
+app.get('/table', serveMenuHtml);
+app.get('/table/:tableCode', serveMenuHtml);
+app.get('/menu', serveMenuHtml);
+app.get('/menu/:tableCode', serveMenuHtml);
+app.get('/order', serveMenuHtml);
+app.get('/order/:tableCode', serveMenuHtml);
 
 // Routes
 app.use('/uploads', express.static(path.resolve(__dirname, '../uploads'), {
@@ -99,6 +102,9 @@ app.get('/ready', (req, res) => {
 });
 // Base Route
 app.get('/', (req, res) => {
+    if (req.accepts('html')) {
+        return res.sendFile(path.resolve(__dirname, '../public/menu.html'));
+    }
     res.status(200).json({
         success: true,
         message: 'Welcome to Enterprise Restaurant Automation API'

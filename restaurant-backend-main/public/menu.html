@@ -964,7 +964,23 @@
   </div>
 
   <script>
-    const tableCode = window.location.pathname.split('/').filter(Boolean).pop() || '';
+    function resolveTableCode() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const fromQuery = urlParams.get('table') || urlParams.get('token') || urlParams.get('code') || urlParams.get('t') || urlParams.get('tableCode');
+        if (fromQuery && fromQuery.trim()) return fromQuery.trim();
+
+        const parts = window.location.pathname.split('/').filter(Boolean);
+        const last = parts.pop() || '';
+        if (last && !['table', 'menu', 'order', 'menu.html', 'index.html'].includes(last.toLowerCase())) {
+          return last;
+        }
+      } catch (e) {}
+      return 'default';
+    }
+
+    let tableCode = resolveTableCode();
+    let currentTable = null;
     let menuData = [];
     let categories = [];
     let cart = {}; // { itemId: { item, qty } }
@@ -1032,6 +1048,14 @@
 
         const data = json.data;
         restaurantData = data;
+        if (data.table) {
+          currentTable = data.table;
+          if (data.table.qrToken) {
+            tableCode = data.table.qrToken;
+          } else if (data.table._id) {
+            tableCode = data.table._id;
+          }
+        }
         document.getElementById('restaurantName').innerText = data.restaurant?.name || 'Grand Hotel & Restaurant';
         document.getElementById('branchName').innerText = data.branch?.name || 'Dine-In';
         document.getElementById('tableText').innerText = data.table?.name || 'Table';

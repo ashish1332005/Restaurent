@@ -3996,11 +3996,13 @@ class AdminOperationsPanel extends StatelessWidget {
             children: [
               Expanded(
                 child: FilledButton.tonalIcon(
-                  onPressed: () => _showQr(
-                    context,
-                    name,
-                    '${table['qrToken'] ?? ''}',
-                  ),
+                  onPressed: () {
+                    final rawToken = '${table['qrToken'] ?? ''}'.trim();
+                    final token = rawToken.isNotEmpty
+                        ? rawToken
+                        : '${table['_id'] ?? table['name'] ?? ''}'.trim();
+                    _showQr(context, name, token);
+                  },
                   icon: const Icon(Icons.qr_code_2_rounded, size: 18),
                   label: const Text('View QR'),
                 ),
@@ -4224,79 +4226,123 @@ class AdminOperationsPanel extends StatelessWidget {
   }
 
   String _customerQrUrl(String token) {
+    final clean = token.trim();
+    final target = clean.isNotEmpty ? clean : '1';
     const configured = String.fromEnvironment('CUSTOMER_APP_URL');
     final base = configured.trim().replaceFirst(RegExp(r'/$'), '');
-    if (base.isNotEmpty) return '$base/table/${Uri.encodeComponent(token)}';
+    if (base.isNotEmpty) return '$base/table/${Uri.encodeComponent(target)}';
     if (kIsWeb && Uri.base.hasAuthority) {
-      return '${Uri.base.origin}/table/${Uri.encodeComponent(token)}';
+      return '${Uri.base.origin}/table/${Uri.encodeComponent(target)}';
     }
     final serverUrl = LocalStorage.getServerUrl() ?? 'https://restaurent-2-xq6f.onrender.com/api/v1';
     final serverRoot = serverUrl.replaceFirst(RegExp(r'/api/v1/?$'), '').replaceFirst(RegExp(r'/$'), '');
     if (serverRoot.isNotEmpty && !serverRoot.contains('10.0.2.2')) {
-      return '$serverRoot/table/${Uri.encodeComponent(token)}';
+      return '$serverRoot/table/${Uri.encodeComponent(target)}';
     }
-    return 'https://restaurent-2-xq6f.onrender.com/table/${Uri.encodeComponent(token)}';
+    return 'https://restaurent-2-xq6f.onrender.com/table/${Uri.encodeComponent(target)}';
   }
 
   Future<void> _showQr(
     BuildContext context,
     String tableName,
     String token,
-  ) => showDialog<void>(
-    context: context,
-    builder: (dialogContext) => AlertDialog(
-      title: Text('$tableName QR'),
-      content: SizedBox(
-        width: 260,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+  ) {
+    final qrUrl = _customerQrUrl(token);
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Row(
           children: [
-            QrImageView(
-              data: _customerQrUrl(token),
-              size: 220,
-              backgroundColor: Colors.white,
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              "Save or print this QR. Scanning it opens this table's customer menu.",
-              textAlign: TextAlign.center,
-            ),
+            const Icon(Icons.qr_code_2_rounded, color: HospitalityColors.inkBlue),
+            const SizedBox(width: 8),
+            Expanded(child: Text('$tableName QR')),
           ],
         ),
+        content: SizedBox(
+          width: 290,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: QrImageView(
+                  data: qrUrl,
+                  size: 220,
+                  backgroundColor: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 14),
+              const Text(
+                "Save or print this QR. Scanning it opens this table's live customer menu.",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, height: 1.35),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: SelectableText(
+                  qrUrl,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontFamily: 'monospace',
+                    color: Colors.blueGrey.shade800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton.icon(
+            onPressed: () async {
+              final uri = Uri.tryParse(qrUrl);
+              if (uri != null) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            },
+            icon: const Icon(Icons.open_in_browser_rounded, size: 18),
+            label: const Text('Open Menu'),
+          ),
+          TextButton.icon(
+            onPressed: () => _downloadQr(context, tableName, qrUrl),
+            icon: const Icon(Icons.download_outlined, size: 18),
+            label: const Text('Download PNG'),
+          ),
+          TextButton.icon(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: qrUrl));
+              if (dialogContext.mounted) {
+                _message(dialogContext, 'Customer QR link copied: $qrUrl');
+              }
+            },
+            icon: const Icon(Icons.copy_rounded, size: 18),
+            label: const Text('Copy link'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Done'),
+          ),
+        ],
       ),
-      actions: [
-        TextButton.icon(
-          onPressed: () async {
-            final uri = Uri.tryParse(_customerQrUrl(token));
-            if (uri != null) {
-              await launchUrl(uri, mode: LaunchMode.externalApplication);
-            }
-          },
-          icon: const Icon(Icons.open_in_browser_rounded),
-          label: const Text('Open Menu'),
-        ),
-        TextButton.icon(
-          onPressed: () =>
-              _downloadQr(context, tableName, _customerQrUrl(token)),
-          icon: const Icon(Icons.download_outlined),
-          label: const Text('Download PNG'),
-        ),
-        TextButton.icon(
-          onPressed: () async {
-            await Clipboard.setData(ClipboardData(text: _customerQrUrl(token)));
-            if (dialogContext.mounted)
-              _message(dialogContext, 'Customer QR link copied: ${_customerQrUrl(token)}');
-          },
-          icon: const Icon(Icons.copy),
-          label: const Text('Copy link'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(dialogContext),
-          child: const Text('Done'),
-        ),
-      ],
-    ),
-  );
+    );
+  }
 
   Future<void> _downloadQr(
     BuildContext context,

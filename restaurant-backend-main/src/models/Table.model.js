@@ -20,6 +20,7 @@ const tableSchema = new mongoose.Schema({
         default: 'Available'
     },
     qrCode: String,
+    qrToken: { type: String, sparse: true },
     qrTokenHash: { type: String, unique: true, sparse: true, select: false },
     qrTokenCreatedAt: { type: Date, default: null },
     qrTokenActive: { type: Boolean, default: true },

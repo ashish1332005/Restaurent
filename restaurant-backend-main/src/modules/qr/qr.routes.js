@@ -24,7 +24,30 @@ const toMoney = (value) => Math.round(Number(value || 0) * 100) / 100;
 const createSessionToken = () => crypto.randomBytes(32).toString('base64url');
 const hashSessionToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 
-const findTableByToken = (tableToken) => Table.findOne({ qrTokenHash: hashTableQrToken(tableToken), qrTokenActive: true });
+const findTableByToken = (tableToken) => {
+  const token = normalizeTableToken(tableToken);
+  const conditions = [];
+
+  if (token && !['default', 'any', 'table', 'menu', 'null', 'undefined'].includes(token.toLowerCase())) {
+    conditions.push({ qrTokenHash: hashTableQrToken(token) });
+    conditions.push({ qrToken: token });
+    if (mongoose.Types.ObjectId.isValid(token)) {
+      conditions.push({ _id: token });
+    }
+    conditions.push({ name: new RegExp(`^${escapeRegExp(token)}$`, 'i') });
+    conditions.push({ name: new RegExp(`^Table\\s*${escapeRegExp(token)}$`, 'i') });
+  }
+
+  if (conditions.length > 0) {
+    return Table.findOne({
+      $or: conditions,
+      qrTokenActive: { $ne: false }
+    });
+  }
+
+  // Fallback to the first active table
+  return Table.findOne({ qrTokenActive: { $ne: false } }).sort({ createdAt: 1 });
+};
 
 const emitOrderCreated = (order) => {
   try {
@@ -37,7 +60,10 @@ const emitOrderCreated = (order) => {
 
 router.get('/table/:tableCode', async (req, res, next) => {
   try {
-    const table = await findTableByToken(normalizeTableToken(req.params.tableCode)).lean();
+    let table = await findTableByToken(normalizeTableToken(req.params.tableCode)).lean();
+    if (!table) {
+      table = await Table.findOne({ qrTokenActive: { $ne: false } }).lean();
+    }
     if (!table) {
       return res.status(404).json({ success: false, message: 'Table QR not found' });
     }

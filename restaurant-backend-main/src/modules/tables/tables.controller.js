@@ -19,6 +19,7 @@ exports.createTable = async (req, res, next) => {
             width: req.body.width,
             height: req.body.height,
             shape: req.body.shape,
+            qrToken: qr.token,
             qrTokenHash: qr.tokenHash,
             qrTokenCreatedAt: new Date(),
             qrTokenActive: true
@@ -37,6 +38,19 @@ exports.getTables = async (req, res, next) => {
         }
         if (branchId) await assertBranchAccess(req.user, branchId);
         const tables = await Table.find(branchId ? { branchId } : {});
+
+        // Auto-heal missing qrToken for legacy tables
+        for (const table of tables) {
+            if (!table.qrToken) {
+                const qr = createTableQrToken();
+                table.qrToken = qr.token;
+                table.qrTokenHash = qr.tokenHash;
+                table.qrTokenCreatedAt = new Date();
+                table.qrTokenActive = table.qrTokenActive !== false;
+                await table.save();
+            }
+        }
+
         res.status(200).json({ success: true, count: tables.length, data: tables });
     } catch (error) {
         next(error);
@@ -62,6 +76,7 @@ exports.rotateTableQr = async (req, res, next) => {
         if (!table) return res.status(404).json({ success: false, message: 'Table not found' });
         await assertBranchAccess(req.user, table.branchId);
         const qr = createTableQrToken();
+        table.qrToken = qr.token;
         table.qrTokenHash = qr.tokenHash;
         table.qrTokenCreatedAt = new Date();
         table.qrTokenActive = true;
