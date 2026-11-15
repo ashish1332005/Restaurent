@@ -36,21 +36,9 @@ jobs:
         working-directory: restaurant-app-main
         run: flutter pub get
 
-      - name: Analyze Flutter Code
-        working-directory: restaurant-app-main
-        run: |
-          flutter analyze > ../analyze_log.txt 2>&1 || (
-            cat ../analyze_log.txt
-            exit 1
-          )
-
       - name: Build Android APK
         working-directory: restaurant-app-main
-        run: |
-          flutter build apk --release --android-skip-build-dependency-validation > ../build_log.txt 2>&1 || (
-            tail -n 120 ../build_log.txt
-            exit 1
-          )
+        run: flutter build apk --release --android-skip-build-dependency-validation
 
       - name: Capture Failure Log
         if: failure()

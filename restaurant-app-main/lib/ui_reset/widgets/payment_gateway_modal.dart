@@ -109,7 +109,6 @@ class _PaymentGatewayModalState extends State<PaymentGatewayModal> {
   ];
 
   static const ink = Color(0xFF09090B);
-  static const saffron = Color(0xFFD66A2C);
   static const emerald = Color(0xFF10B981);
 
   String get _upiPayload {
@@ -455,7 +454,7 @@ class _PaymentGatewayModalState extends State<PaymentGatewayModal> {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: badgeColor.withOpacity(0.12),
+                color: badgeColor.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.flash_on_rounded, size: 16, color: badgeColor),

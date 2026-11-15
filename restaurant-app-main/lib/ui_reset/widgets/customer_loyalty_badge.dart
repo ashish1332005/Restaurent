@@ -18,7 +18,6 @@ class CustomerLoyaltyBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const saffron = Color(0xFFC99232);
-    const ink = Color(0xFF071A31);
 
     final tier = visitCount >= 10
         ? 'Platinum Diner 👑'

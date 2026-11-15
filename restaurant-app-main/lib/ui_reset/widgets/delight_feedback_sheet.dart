@@ -64,7 +64,6 @@ class _DelightFeedbackSheetState extends State<DelightFeedbackSheet> {
 
   static const saffron = Color(0xFFC99232);
   static const ink = Color(0xFF071A31);
-  static const leaf = Color(0xFF237A59);
 
   final List<String> _emojiReactions = const [
     '😡 Terrible',
