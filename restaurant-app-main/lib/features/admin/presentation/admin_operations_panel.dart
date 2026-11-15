@@ -2227,7 +2227,7 @@ class AdminOperationsPanel extends StatelessWidget {
                                 )
                                 .toList(),
                             onChanged: (value) {
-                              setDialogState(() => categoryId = value);
+                              setDialogState(() => categoryId = value ?? categoryId);
                             },
                           ),
                           HeadlessSelectField<String>(

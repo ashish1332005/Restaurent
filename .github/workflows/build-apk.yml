@@ -39,6 +39,7 @@ jobs:
       - name: Build Android APK
         working-directory: restaurant-app-main
         run: |
+          set -o pipefail
           flutter analyze --no-fatal-infos > ../analyze_log.txt 2>&1 || true
           flutter build apk --release --android-skip-build-dependency-validation --dart-define=API_BASE_URL=https://restaurent-2-xq6f.onrender.com/api/v1 2>&1 | tee ../build_log.txt
 
@@ -48,19 +49,24 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -B build-failure-log
-          { tail -n 80 analyze_log.txt 2>/dev/null; tail -n 120 build_log.txt 2>/dev/null; } > build_error_summary.txt
+          { echo "=== ANALYZE LOG ==="; tail -n 80 ../analyze_log.txt 2>/dev/null; echo "=== BUILD LOG ==="; tail -n 120 ../build_log.txt 2>/dev/null; } > build_error_summary.txt
           git add build_error_summary.txt
           git commit -m "ci: capture build error log"
           git push origin build-failure-log --force
 
       - name: Rename APK for Easy Download
         run: |
-          APK_PATH=$(find restaurant-app-main/build -name "*release*.apk" | head -n 1)
+          APK_PATH=$(find restaurant-app-main/build -name "*release*.apk" 2>/dev/null | head -n 1)
           if [ -z "$APK_PATH" ]; then
-            APK_PATH=$(find restaurant-app-main/build -name "*.apk" | head -n 1)
+            APK_PATH=$(find restaurant-app-main/build -name "*.apk" 2>/dev/null | head -n 1)
           fi
-          echo "Found APK at: $APK_PATH"
-          cp "$APK_PATH" ./restaurant-app.apk
+          if [ -n "$APK_PATH" ]; then
+            echo "Found APK at: $APK_PATH"
+            cp "$APK_PATH" ./restaurant-app.apk
+          else
+            echo "Using default fallback"
+            cp restaurant-app-main/build/app/outputs/flutter-apk/app-release.apk ./restaurant-app.apk
+          fi
 
       - name: Upload Release APK Artifact
         uses: actions/upload-artifact@v4
@@ -88,32 +94,3 @@ jobs:
             - 🍽️ **Smart Table QR Ordering & Live Menu:** Bestsellers, Chef Specials, Category chips and real-time order tracking.
             - 📊 **Royal Admin Dashboard:** POS, Kitchen KDS, Floor tables, Inventory, Attendance and instant online plan upgrade.
           files: ./restaurant-app.apk
-
-  build-web:
-    name: Build & Deploy Flutter Web
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          cache: true
-
-      - name: Install Dependencies
-        working-directory: restaurant-app-main
-        run: flutter pub get
-
-      - name: Build Web App
-        working-directory: restaurant-app-main
-        run: flutter build web --release --base-href "/Restaurent/" --dart-define=API_BASE_URL=https://restaurent-2-xq6f.onrender.com/api/v1
-
-      - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4
-        if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/master')
-        with:
-          folder: restaurant-app-main/build/web
-          branch: gh-pages
