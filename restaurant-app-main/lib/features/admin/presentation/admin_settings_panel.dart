@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/network/restaurant_api.dart';
 import '../../../core/storage/local_storage.dart';
 
@@ -173,6 +174,17 @@ class _AdminSettingsPanelState extends State<AdminSettingsPanel> {
               _tag('${restaurant['subscriptionPlan'] ?? 'Basic'} plan'),
             if (restaurant.isNotEmpty)
               _tag('${restaurant['subscriptionStatus'] ?? 'Unknown'}'),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFFD66A2C),
+                side: const BorderSide(color: Color(0xFFD66A2C)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+              onPressed: () => context.push('/subscription'),
+              icon: const Icon(Icons.bolt, size: 16),
+              label: const Text('Plans & Billing', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
             IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
           ],
         ),

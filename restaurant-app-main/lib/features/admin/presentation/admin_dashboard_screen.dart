@@ -365,6 +365,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   .toList(),
             ),
           IconButton(
+            tooltip: 'Plans & Online Activation',
+            onPressed: () => context.push('/subscription'),
+            icon: const Icon(Icons.workspace_premium_rounded, color: Color(0xFFFFB076)),
+          ),
+          IconButton(
             onPressed: () => setState(() => data = _load()),
             icon: const Icon(Icons.refresh),
           ),

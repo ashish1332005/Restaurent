@@ -239,12 +239,16 @@ exports.registerRestaurantOwner = async (req, res, next) => {
         const existingUser = await User.findOne({ $or: [{ phone }, ...(email ? [{ email }] : [])] });
         if (existingUser) return res.status(409).json({ success: false, message: 'Owner account already exists' });
 
+        const now = new Date();
+        const trialExpiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
         const restaurant = await Restaurant.create({
             name: restaurantName,
             ownerId: null,
-            subscriptionPlan: plan,
-            subscriptionStatus: 'Pending Payment',
-            isActive: false,
+            subscriptionPlan: plan || 'Pro',
+            subscriptionStatus: 'Trial',
+            subscriptionExpiresAt: trialExpiresAt,
+            isActive: true,
             orderRadiusMeters,
             geoLocation: { latitude, longitude }
         });
@@ -273,10 +277,12 @@ exports.registerRestaurantOwner = async (req, res, next) => {
         const planPrices = { Basic: 999, Pro: 1999, Premium: 2999, Enterprise: 4999 };
         const subscription = await Subscription.create({
             restaurantId: restaurant._id,
-            plan,
-            status: 'Pending Payment',
-            amount: planPrices[plan] || planPrices.Basic,
-            currency: 'INR'
+            plan: plan || 'Pro',
+            status: 'Trial',
+            amount: planPrices[plan] || planPrices.Pro,
+            currency: 'INR',
+            startsAt: now,
+            expiresAt: trialExpiresAt
         });
 
         const token = user.getSignedJwtToken();
@@ -288,7 +294,7 @@ exports.registerRestaurantOwner = async (req, res, next) => {
                 restaurant,
                 branch,
                 subscription,
-                nextStep: 'PAYMENT_REQUIRED'
+                nextStep: 'ACTIVE'
             }
         });
     } catch (error) {
@@ -329,13 +335,39 @@ exports.login = async (req, res, next) => {
         }
 
         const token = user.getSignedJwtToken();
-        const restaurant = user.restaurantId ? await Restaurant.findById(user.restaurantId).lean() : null;
+        let restaurant = user.restaurantId ? await Restaurant.findById(user.restaurantId) : null;
+        if (restaurant && (!restaurant.subscriptionStatus || restaurant.subscriptionStatus === 'Pending Payment' || !restaurant.isActive)) {
+            const now = new Date();
+            restaurant.subscriptionStatus = 'Trial';
+            restaurant.isActive = true;
+            if (!restaurant.subscriptionExpiresAt || new Date(restaurant.subscriptionExpiresAt) < now) {
+                restaurant.subscriptionExpiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+            }
+            await restaurant.save();
+
+            let sub = await Subscription.findOne({ restaurantId: restaurant._id });
+            if (!sub) {
+                await Subscription.create({
+                    restaurantId: restaurant._id,
+                    plan: restaurant.subscriptionPlan || 'Pro',
+                    status: 'Trial',
+                    amount: 1999,
+                    currency: 'INR',
+                    startsAt: now,
+                    expiresAt: restaurant.subscriptionExpiresAt
+                });
+            } else if (sub.status === 'Pending Payment') {
+                sub.status = 'Trial';
+                sub.expiresAt = restaurant.subscriptionExpiresAt;
+                await sub.save();
+            }
+        }
         const responseUser = {
             ...mapUserResponse(user, user.role.name),
-            subscriptionStatus: restaurant?.subscriptionStatus || '',
-            subscriptionPlan: restaurant?.subscriptionPlan || '',
+            subscriptionStatus: restaurant?.subscriptionStatus || 'Trial',
+            subscriptionPlan: restaurant?.subscriptionPlan || 'Pro',
             subscriptionExpiresAt: restaurant?.subscriptionExpiresAt || null,
-            restaurantIsActive: restaurant?.isActive === true
+            restaurantIsActive: restaurant ? restaurant.isActive === true : true
         };
 
         res.status(200).json({

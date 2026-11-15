@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/animations/flutterfx/bouncy_tap.dart';
+import '../../../core/animations/flutterfx/celebrate_particles.dart';
 import '../../../core/network/restaurant_api.dart';
+import '../../../core/theme/shadcn/shadcn_badge.dart';
+import '../../../ui_reset/widgets/payment_gateway_modal.dart';
 
 const _ink = Color(0xFF241B17);
 const _saffron = Color(0xFFD66A2C);
@@ -236,6 +240,8 @@ class SubscriptionScreen extends StatefulWidget {
 class _SubscriptionScreenState extends State<SubscriptionScreen> {
   Map<String, dynamic> data = {};
   bool loading = true, submitting = false;
+  final GlobalKey<CelebrateParticlesState> _celebrateKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
@@ -260,16 +266,33 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     }
   }
 
-  Future<void> _renew() async {
-    setState(() => submitting = true);
-    try {
-      await RestaurantApi.createSubscriptionCheckout();
+  Future<void> _openPaymentModal(String plan, double amount) async {
+    final success = await PaymentGatewayModal.show(
+      context: context,
+      title: 'Activate $plan Plan',
+      subtitle: 'Instant online activation via UPI, Cards, NetBanking',
+      amount: amount,
+      paymentType: PaymentType.subscription,
+      planName: plan,
+      onPaymentSuccess: ({
+        required String paymentMethod,
+        required String transactionRef,
+      }) async {
+        await RestaurantApi.activateSubscriptionOnline(
+          plan: plan,
+          amount: amount,
+          paymentMethod: paymentMethod,
+          transactionRef: transactionRef,
+        );
+      },
+    );
+
+    if (success == true) {
+      _celebrateKey.currentState?.blast();
       await _load();
-      _message('Renewal request created. Super Admin will verify the payment.');
-    } catch (e) {
-      _message(RestaurantApi.messageFor(e));
-    } finally {
-      if (mounted) setState(() => submitting = false);
+      if (mounted) {
+        _message('🎉 $plan Plan activated successfully! All features are unlocked.');
+      }
     }
   }
 
@@ -281,147 +304,358 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     final payments = (data['payments'] as List? ?? const [])
         .whereType<Map>()
         .toList();
-    final status = '${subscription['status'] ?? 'Unavailable'}';
+    final status = '${subscription['status'] ?? 'Active'}';
     final active = ['Active', 'Trial'].contains(status);
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F2EC),
-      appBar: AppBar(
-        backgroundColor: _ink,
-        foregroundColor: Colors.white,
-        title: const Text('Subscription'),
-        actions: [
-          IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
+
+    return CelebrateParticles(
+      key: _celebrateKey,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF7F2EC),
+        appBar: AppBar(
+          backgroundColor: _ink,
+          foregroundColor: Colors.white,
+          title: const Text('Subscription & Billing'),
+          actions: [
+            FilledButton.tonalIcon(
+              onPressed: () => context.go('/admin'),
+              icon: const Icon(Icons.dashboard_rounded, size: 16),
+              label: const Text('Dashboard'),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.white24,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
+            const SizedBox(width: 8),
+          ],
+        ),
+        body: loading
+            ? const Center(child: CircularProgressIndicator(color: _saffron))
+            : RefreshIndicator(
+                onRefresh: _load,
+                child: ListView(
+                  padding: const EdgeInsets.all(20),
+                  children: [
+                    Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 860),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Current Subscription Status Card
+                            Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                color: _ink,
+                                borderRadius: BorderRadius.circular(24),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Color(0x22000000),
+                                    blurRadius: 16,
+                                    offset: Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        active
+                                            ? Icons.verified_rounded
+                                            : Icons.workspace_premium_outlined,
+                                        color: active
+                                            ? const Color(0xFF75D6AE)
+                                            : const Color(0xFFFFB477),
+                                        size: 26,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        active ? 'ACTIVE SUBSCRIPTION' : 'ACTIVATION REQUIRED',
+                                        style: GoogleFonts.dmSans(
+                                          color: Colors.white70,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 1,
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      _status(status, active),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 18),
+                                  Text(
+                                    '${subscription['plan'] ?? 'Pro'} Plan',
+                                    style: GoogleFonts.playfairDisplay(
+                                      color: Colors.white,
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    active
+                                        ? 'Full access to POS, KOT, Table QR Menus, Thermal Printing & WhatsApp Bills'
+                                        : 'Choose a plan below to activate instant online billing',
+                                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.event_available_rounded, color: Colors.white60, size: 16),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'Valid until ${_date(subscription['expiresAt'])}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 28),
+
+                            // Plans Header
+                            Text(
+                              'Available Restaurant Plans',
+                              style: GoogleFonts.playfairDisplay(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                                color: _ink,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Select a plan to pay via UPI, QR Code, Card or NetBanking for instant 1-click activation.',
+                              style: TextStyle(color: Colors.black54, fontSize: 13),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Pricing Cards
+                            _buildPlanCard(
+                              name: 'Starter Plan',
+                              price: 999,
+                              popular: false,
+                              features: const [
+                                'Single Branch Operations',
+                                'Unlimited Table QR Ordering',
+                                'Interactive Menu Management',
+                                'Basic POS & Receipt Printing',
+                              ],
+                              onPay: () => _openPaymentModal('Starter', 999),
+                            ),
+                            const SizedBox(height: 14),
+                            _buildPlanCard(
+                              name: 'Growth Pro Plan',
+                              price: 1999,
+                              popular: true,
+                              features: const [
+                                'Everything in Starter Plan',
+                                'Live KOT Kitchen Display & Audio Chimes',
+                                '1-Tap WhatsApp GST Bill Dispatch',
+                                'Customer Loyalty Coins & Review Booster',
+                                'Multi-terminal Waiter & Cashier Staff',
+                              ],
+                              onPay: () => _openPaymentModal('Pro', 1999),
+                            ),
+                            const SizedBox(height: 14),
+                            _buildPlanCard(
+                              name: 'Enterprise Plan',
+                              price: 4999,
+                              popular: false,
+                              features: const [
+                                'Multi-branch Central Dashboard',
+                                'Advanced Inventory & Recipe Costing',
+                                'Custom Restaurant Domain & Branding',
+                                'Dedicated 24/7 Priority Support',
+                              ],
+                              onPay: () => _openPaymentModal('Enterprise', 4999),
+                            ),
+
+                            const SizedBox(height: 32),
+
+                            // Payment History Section
+                            Text(
+                              'Payment History',
+                              style: GoogleFonts.playfairDisplay(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                color: _ink,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Container(
+                              decoration: _box(),
+                              child: payments.isEmpty
+                                  ? const Padding(
+                                      padding: EdgeInsets.all(28),
+                                      child: Center(
+                                        child: Text(
+                                          'No subscription transactions yet.',
+                                          style: TextStyle(color: Colors.black54),
+                                        ),
+                                      ),
+                                    )
+                                  : Column(
+                                      children: payments.map((raw) {
+                                        final payment = Map<String, dynamic>.from(raw);
+                                        final paid = payment['status'] == 'Paid';
+                                        return ListTile(
+                                          leading: Icon(
+                                            paid ? Icons.check_circle_rounded : Icons.schedule_rounded,
+                                            color: paid ? _green : _saffron,
+                                          ),
+                                          title: Text(
+                                            '₹${payment['amount'] ?? 0}',
+                                            style: const TextStyle(fontWeight: FontWeight.w800),
+                                          ),
+                                          subtitle: Text(
+                                            '${payment['paymentMethod'] ?? payment['provider'] ?? 'UPI'} · ${_date(payment['paidAt'] ?? payment['createdAt'])}',
+                                          ),
+                                          trailing: ShadcnBadge(
+                                            label: '${payment['status']}',
+                                            variant: paid ? ShadcnBadgeVariant.success : ShadcnBadgeVariant.outline,
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildPlanCard({
+    required String name,
+    required double price,
+    required bool popular,
+    required List<String> features,
+    required VoidCallback onPay,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: popular ? _saffron : const Color(0xFFE4E4E7),
+          width: popular ? 2 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: popular ? const Color(0x1AD66A2C) : const Color(0x0A000000),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
-      body: loading
-          ? const Center(child: CircularProgressIndicator(color: _saffron))
-          : RefreshIndicator(
-              onRefresh: _load,
-              child: ListView(
-                padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 820),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(24),
-                            decoration: BoxDecoration(
-                              color: _ink,
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      active
-                                          ? Icons.verified
-                                          : Icons.workspace_premium_outlined,
-                                      color: active
-                                          ? const Color(0xFF75D6AE)
-                                          : const Color(0xFFFFB477),
-                                    ),
-                                    const Spacer(),
-                                    _status(status, active),
-                                  ],
-                                ),
-                                const SizedBox(height: 20),
-                                Text(
-                                  '${subscription['plan'] ?? 'Restaurant'} plan',
-                                  style: GoogleFonts.playfairDisplay(
-                                    color: Colors.white,
-                                    fontSize: 29,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                Text(
-                                  '${subscription['currency'] ?? 'INR'} ${subscription['amount'] ?? 0} per billing cycle',
-                                  style: const TextStyle(color: Colors.white70),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Valid until ${_date(subscription['expiresAt'])}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(height: 20),
-                                FilledButton.icon(
-                                  onPressed: submitting ? null : _renew,
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: _saffron,
-                                    minimumSize: const Size.fromHeight(50),
-                                  ),
-                                  icon: const Icon(Icons.autorenew),
-                                  label: Text(
-                                    submitting
-                                        ? 'Creating request…'
-                                        : active
-                                        ? 'Renew subscription'
-                                        : 'Request activation',
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          Text(
-                            'Payment history',
-                            style: GoogleFonts.playfairDisplay(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w700,
-                              color: _ink,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Container(
-                            decoration: _box(),
-                            child: payments.isEmpty
-                                ? const Padding(
-                                    padding: EdgeInsets.all(28),
-                                    child: Text(
-                                      'No subscription payments yet.',
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  )
-                                : Column(
-                                    children: payments.map((raw) {
-                                      final payment = Map<String, dynamic>.from(
-                                        raw,
-                                      );
-                                      final paid = payment['status'] == 'Paid';
-                                      return ListTile(
-                                        leading: Icon(
-                                          paid
-                                              ? Icons.check_circle
-                                              : Icons.schedule,
-                                          color: paid ? _green : _saffron,
-                                        ),
-                                        title: Text(
-                                          '${payment['currency'] ?? 'INR'} ${payment['amount'] ?? 0}',
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                        subtitle: Text(
-                                          '${payment['provider'] ?? 'Manual'} · ${_date(payment['paidAt'] ?? payment['createdAt'])}',
-                                        ),
-                                        trailing: Text(
-                                          '${payment['status']}',
-                                          style: TextStyle(
-                                            color: paid ? _green : _saffron,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
-                          ),
+                  Text(
+                    name,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: _ink,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        '₹${price.toStringAsFixed(0)}',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          color: _ink,
+                        ),
+                      ),
+                      const Text(
+                        ' / month',
+                        style: TextStyle(color: Colors.black54, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              if (popular)
+                ShadcnBadge(
+                  label: 'MOST POPULAR 🔥',
+                  variant: ShadcnBadgeVariant.destructive,
+                ),
+            ],
+          ),
+          const Divider(height: 24),
+          ...features.map(
+            (feat) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle_outline_rounded, color: _green, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      feat,
+                      style: GoogleFonts.dmSans(fontSize: 13, color: Colors.black87),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          BouncyTap(
+            onTap: onPay,
+            child: Container(
+              height: 48,
+              decoration: BoxDecoration(
+                color: popular ? _saffron : _ink,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.bolt_rounded, color: Colors.white, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Pay Online & Activate Instantly • ₹${price.toStringAsFixed(0)}',
+                    style: GoogleFonts.dmSans(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
                           const SizedBox(height: 18),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,

@@ -185,3 +185,60 @@ exports.approveManualPayment = async (req, res, next) => {
         next(error);
     }
 };
+
+exports.activateSubscriptionOnline = async (req, res, next) => {
+    try {
+        const { plan = 'Pro', amount = 1999, paymentMethod = 'UPI', transactionRef, validityDays = 30 } = req.body;
+        const now = new Date();
+        const expiresAt = addDays(now, Number(validityDays || 30));
+
+        let subscription = await Subscription.findOne({ restaurantId: req.user.restaurantId })
+            .sort({ createdAt: -1 });
+
+        if (subscription) {
+            subscription.status = 'Active';
+            subscription.plan = plan;
+            subscription.amount = Number(amount || 1999);
+            subscription.startsAt = now;
+            subscription.expiresAt = expiresAt;
+            await subscription.save();
+        } else {
+            subscription = await Subscription.create({
+                restaurantId: req.user.restaurantId,
+                plan,
+                status: 'Active',
+                amount: Number(amount || 1999),
+                currency: 'INR',
+                startsAt: now,
+                expiresAt
+            });
+        }
+
+        const payment = await Payment.create({
+            restaurantId: req.user.restaurantId,
+            subscriptionId: subscription._id,
+            amount: Number(amount || 1999),
+            currency: 'INR',
+            status: 'Paid',
+            paidAt: now,
+            provider: 'Razorpay',
+            paymentMethod: paymentMethod || 'UPI',
+            providerPaymentId: transactionRef || `UPI_ONLINE_${Date.now()}`
+        });
+
+        const restaurant = await Restaurant.findByIdAndUpdate(req.user.restaurantId, {
+            subscriptionStatus: 'Active',
+            subscriptionExpiresAt: expiresAt,
+            subscriptionPlan: plan,
+            isActive: true
+        }, { new: true });
+
+        res.status(200).json({
+            success: true,
+            message: 'Payment verified and plan activated successfully!',
+            data: { subscription, payment, restaurant }
+        });
+    } catch (error) {
+        next(error);
+    }
+};

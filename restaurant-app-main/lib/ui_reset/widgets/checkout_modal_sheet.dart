@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/animations/flutterfx/animated_price_ticker.dart';
 import '../../core/animations/flutterfx/bouncy_tap.dart';
 import '../../core/animations/flutterfx/celebrate_particles.dart';
+import 'payment_gateway_modal.dart';
 
 class CheckoutModalSheet extends StatefulWidget {
   const CheckoutModalSheet({
@@ -60,6 +61,7 @@ class _CheckoutModalSheetState extends State<CheckoutModalSheet> {
   bool _useLoyaltyCoins = false;
   int _redeemPoints = 0;
   bool _submitting = false;
+  String _selectedPaymentMethod = 'UPI';
 
   static const saffron = Color(0xFFC99232);
   static const ink = Color(0xFF071A31);
@@ -541,7 +543,7 @@ class _CheckoutModalSheetState extends State<CheckoutModalSheet> {
                       ),
                     if (widget.availableCoins > 0) const SizedBox(height: 14),
 
-                    // Customer Details Card
+                    // Diner Details Card
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
@@ -583,6 +585,61 @@ class _CheckoutModalSheetState extends State<CheckoutModalSheet> {
                               counterText: '',
                               isDense: true,
                             ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Payment Method Selector Card
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: const Color(0xFFF0EAE1)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                'PAYMENT METHOD',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.8,
+                                  color: Colors.black45,
+                                ),
+                              ),
+                              const Spacer(),
+                              const Icon(Icons.verified_user_outlined, size: 14, color: leaf),
+                              const SizedBox(width: 4),
+                              const Text('Instant UPI & Cash', style: TextStyle(fontSize: 11, color: leaf, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _paymentOptionTile(
+                                  id: 'UPI',
+                                  title: 'Online UPI / QR',
+                                  subtitle: 'GPay, PhonePe, Paytm',
+                                  icon: Icons.qr_code_scanner_rounded,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _paymentOptionTile(
+                                  id: 'CASH',
+                                  title: 'Pay at Counter',
+                                  subtitle: 'Cash/Card after meal',
+                                  icon: Icons.payments_outlined,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -653,10 +710,45 @@ class _CheckoutModalSheetState extends State<CheckoutModalSheet> {
                         return;
                       }
 
+                      if (_selectedPaymentMethod == 'UPI') {
+                        final paid = await PaymentGatewayModal.show(
+                          context: context,
+                          title: 'Pay Order via UPI',
+                          subtitle: 'Table: ${widget.tableName} • ₹${_grandTotal.toStringAsFixed(0)}',
+                          amount: _grandTotal,
+                          paymentType: PaymentType.customerOrder,
+                          tableCode: widget.tableCode,
+                          allowCash: false,
+                          onPaymentSuccess: ({
+                            required String paymentMethod,
+                            required String transactionRef,
+                          }) async {
+                            final notesList = [
+                              ..._selectedQuickNotes,
+                              'Online Paid via $paymentMethod ($transactionRef)',
+                              if (_notesController.text.trim().isNotEmpty) _notesController.text.trim(),
+                            ];
+                            await widget.onPlaceOrder(
+                              notes: notesList.join(', '),
+                              couponCode: _appliedCoupon ?? '',
+                              redeemPoints: _redeemPoints,
+                            );
+                          },
+                        );
+
+                        if (paid == true) {
+                          _celebrateKey.currentState?.blast();
+                          await Future.delayed(const Duration(milliseconds: 300));
+                          if (context.mounted) Navigator.pop(context);
+                        }
+                        return;
+                      }
+
                       setState(() => _submitting = true);
                       try {
                         final notesList = [
                           ..._selectedQuickNotes,
+                          'Payment: Pay at Counter (Cash/Card)',
                           if (_notesController.text.trim().isNotEmpty) _notesController.text.trim(),
                         ];
                         await widget.onPlaceOrder(
@@ -701,12 +793,20 @@ class _CheckoutModalSheetState extends State<CheckoutModalSheet> {
                       : Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.rocket_launch_rounded, color: Colors.white, size: 20),
+                            Icon(
+                              _selectedPaymentMethod == 'UPI'
+                                  ? Icons.qr_code_scanner_rounded
+                                  : Icons.rocket_launch_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                             const SizedBox(width: 8),
                             Text(
-                              'Send Order to Kitchen • ₹${_grandTotal.toStringAsFixed(0)}',
+                              _selectedPaymentMethod == 'UPI'
+                                  ? 'Pay Online via UPI • ₹${_grandTotal.toStringAsFixed(0)}'
+                                  : 'Place Order (Pay Counter) • ₹${_grandTotal.toStringAsFixed(0)}',
                               style: GoogleFonts.dmSans(
-                                fontSize: 16,
+                                fontSize: 15,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
                               ),
@@ -716,6 +816,61 @@ class _CheckoutModalSheetState extends State<CheckoutModalSheet> {
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _paymentOptionTile({
+    required String id,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+  }) {
+    final isSelected = _selectedPaymentMethod == id;
+    return BouncyTap(
+      onTap: () => setState(() => _selectedPaymentMethod = id),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFFBF8F3) : Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected ? saffron : const Color(0xFFEADBCA),
+            width: isSelected ? 1.8 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? saffron : Colors.black54,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected ? ink : Colors.black87,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(fontSize: 10, color: Colors.black54),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              const Icon(Icons.check_circle_rounded, color: saffron, size: 16),
           ],
         ),
       ),

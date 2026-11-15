@@ -499,6 +499,28 @@ class RestaurantApi {
     );
   }
 
+  static Future<Map<String, dynamic>> activateSubscriptionOnline({
+    required String plan,
+    required double amount,
+    String paymentMethod = 'UPI',
+    String? transactionRef,
+    int validityDays = 30,
+  }) async {
+    final response = await _client.post<Map<String, dynamic>>(
+      '/payments/activate-online',
+      data: {
+        'plan': plan,
+        'amount': amount,
+        'paymentMethod': paymentMethod,
+        'transactionRef': transactionRef ?? 'UPI_${DateTime.now().millisecondsSinceEpoch}',
+        'validityDays': validityDays,
+      },
+    );
+    return Map<String, dynamic>.from(
+      response.data?['data'] as Map? ?? const {},
+    );
+  }
+
   static Future<bool> checkServerHealth() async {
     final root = ApiClient.baseUrl.replaceFirst(RegExp(r'/api/v1/?$'), '');
     final response = await Dio().get<Map<String, dynamic>>(

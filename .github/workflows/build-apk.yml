@@ -38,23 +38,7 @@ jobs:
 
       - name: Build Android APK
         working-directory: restaurant-app-main
-        run: |
-          flutter build apk --release --android-skip-build-dependency-validation --verbose > ../build_log.txt 2>&1 || (
-            echo "::error::Flutter APK compilation failed. Printing tail of log:"
-            tail -n 120 ../build_log.txt
-            exit 1
-          )
-
-      - name: Capture Failure Log
-        if: failure()
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -B build-failure-log
-          cp build_log.txt build_error_summary.txt || tail -n 2000 build_log.txt > build_error_summary.txt
-          git add build_error_summary.txt
-          git commit -m "ci: capture build error log"
-          git push origin build-failure-log --force
+        run: flutter build apk --release --android-skip-build-dependency-validation
 
       - name: Rename APK for Easy Download
         run: |
@@ -77,13 +61,12 @@ jobs:
             ### 📱 Restaurant Mobile Application (Android)
             
             Sabhi users direct niche diye gaye APK link par tap karke download aur install kar sakte hain:
-            - **Download APK:** [`restaurant-app.apk`](https://github.com/ashish1332005/Restaurent/releases/download/v1.0.0/restaurant-app.apk)
+            - **Direct Download APK:** [`restaurant-app.apk`](https://github.com/ashish1332005/Restaurent/releases/download/v1.0.0/restaurant-app.apk)
             
-            #### Features Included:
-            - 🍽️ Customer Table QR Ordering & Live Menu
-            - 🔥 Bestsellers & Chef Specials Highlights
-            - 🪙 Loyalty Coins & Tier Perks
-            - ⏱️ Live Kitchen Order Status Stepper
-            - 📱 1-Tap WhatsApp GST Bill Dispatch
-            - ⭐ 5-Star Delight Feedback & Google Review Booster
+            #### 🚀 Naye Features & Updates:
+            - 💳 **Online Payment Gateway Integrated:** Live Dynamic UPI QR, Google Pay, PhonePe, Paytm, Cards & NetBanking.
+            - ⚡ **Instant Restaurant Activation:** Free 30-day trial automatically active. No waiting or "request activation" blocker.
+            - 🛒 **Customer Order Checkout:** Instant UPI QR Pay vs Pay at Counter options with live animated bill summary & celebration particles.
+            - 🍽️ **Smart Table QR Ordering & Live Menu:** Bestsellers, Chef Specials, Category chips and real-time order tracking.
+            - 📊 **Royal Admin Dashboard:** POS, Kitchen KDS, Floor tables, Inventory, Attendance and instant online plan upgrade.
           files: ./restaurant-app.apk

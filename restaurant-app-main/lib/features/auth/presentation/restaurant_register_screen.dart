@@ -79,7 +79,16 @@ class _RestaurantRegisterScreenState extends State<RestaurantRegisterScreen> {
         password: password.text,
         address: '${address.text.trim()}, ${city.text.trim()}',
       );
-      if (mounted) context.go('/subscription');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('🎉 Welcome to Restaurant OS! Your 30-Day Pro Trial is now active.'),
+            backgroundColor: Color(0xFF237A59),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        context.go('/admin');
+      }
     } catch (exception) {
       if (mounted)
         setState(() {

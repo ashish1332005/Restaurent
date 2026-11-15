@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/network/restaurant_api.dart';
 import '../../../core/storage/local_storage.dart';
 import '../../../core/theme/hospitality_theme.dart';
@@ -37,7 +38,7 @@ class AdminOperationsPanel extends StatelessWidget {
       LocalStorage.isSubscriptionActive();
   bool get _writeBlocked => branchId == null || !_subscriptionAllowsWrites;
 
-  Widget _writeNotice() => Container(
+  Widget _writeNotice([BuildContext? context]) => Container(
     width: double.infinity,
     margin: const EdgeInsets.only(bottom: 14),
     padding: const EdgeInsets.all(14),
@@ -55,8 +56,28 @@ class AdminOperationsPanel extends StatelessWidget {
             branchId == null
                 ? 'Select a branch before adding restaurant data.'
                 : 'Your subscription is inactive or expired. Renew it to add or edit data.',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF7A2E05),
+            ),
           ),
         ),
+        if (branchId != null && !_subscriptionAllowsWrites && context != null) ...[
+          const SizedBox(width: 10),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD66A2C),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            ),
+            onPressed: () => context.push('/subscription'),
+            icon: const Icon(Icons.bolt, size: 16),
+            label: const Text('Upgrade / Pay Online', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          ),
+        ],
       ],
     ),
   );
@@ -485,7 +506,7 @@ class AdminOperationsPanel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (_writeBlocked) _writeNotice(),
+        if (_writeBlocked) _writeNotice(context),
         Wrap(
           spacing: 10,
           runSpacing: 10,
@@ -2977,7 +2998,7 @@ class AdminOperationsPanel extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (_writeBlocked) _writeNotice(),
+              if (_writeBlocked) _writeNotice(context),
               const SizedBox(height: 12),
               FilledButton.icon(
                 onPressed: _writeBlocked ? null : () => _editTable(context),
