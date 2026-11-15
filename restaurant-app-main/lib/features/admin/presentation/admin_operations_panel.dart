@@ -1338,13 +1338,16 @@ class AdminOperationsPanel extends StatelessWidget {
               controller: name,
               autofocus: true,
               decoration: const InputDecoration(
-                labelText: 'Category name (English)',
+                labelText: 'Category name (English) *',
+                border: OutlineInputBorder(),
               ),
             ),
+            const SizedBox(height: 12),
             TextField(
               controller: nameHi,
               decoration: const InputDecoration(
                 labelText: 'Category name (Hindi, optional)',
+                border: OutlineInputBorder(),
               ),
             ),
           ],
@@ -2065,30 +2068,41 @@ class AdminOperationsPanel extends StatelessWidget {
                           TextField(
                             controller: name,
                             decoration: const InputDecoration(
-                              labelText: 'Item name (English)',
+                              labelText: 'Item name (English) *',
+                              hintText: 'e.g. Paneer Butter Masala',
+                              border: OutlineInputBorder(),
                             ),
                           ),
+                          const SizedBox(height: 12),
                           TextField(
                             controller: nameHi,
                             decoration: const InputDecoration(
                               labelText: 'Item name (Hindi, optional)',
+                              hintText: 'उदा. पनीर बटर मसाला',
+                              border: OutlineInputBorder(),
                             ),
                           ),
+                          const SizedBox(height: 12),
                           TextField(
                             controller: description,
                             maxLines: 2,
                             decoration: const InputDecoration(
                               labelText: 'Description (English)',
+                              hintText: 'Rich creamy gravy with fresh cottage cheese',
+                              border: OutlineInputBorder(),
                             ),
                           ),
+                          const SizedBox(height: 12),
                           TextField(
                             controller: descriptionHi,
                             maxLines: 2,
                             decoration: const InputDecoration(
                               labelText: 'Description (Hindi, optional)',
+                              hintText: 'स्वादिष्ट और मलाईदार पनीर करी',
+                              border: OutlineInputBorder(),
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 16),
                           _menuFormHeading(
                             dialogContext,
                             'Food photo',
@@ -2559,7 +2573,8 @@ class AdminOperationsPanel extends StatelessWidget {
                                   controller: price,
                                   keyboardType: TextInputType.number,
                                   decoration: const InputDecoration(
-                                    labelText: 'Base price',
+                                    labelText: 'Base price *',
+                                    border: OutlineInputBorder(),
                                   ),
                                 ),
                               ),
@@ -2570,6 +2585,7 @@ class AdminOperationsPanel extends StatelessWidget {
                                   keyboardType: TextInputType.number,
                                   decoration: const InputDecoration(
                                     labelText: 'Tax %',
+                                    border: OutlineInputBorder(),
                                   ),
                                 ),
                               ),
@@ -2580,6 +2596,7 @@ class AdminOperationsPanel extends StatelessWidget {
                                   keyboardType: TextInputType.number,
                                   decoration: const InputDecoration(
                                     labelText: 'Discount %',
+                                    border: OutlineInputBorder(),
                                   ),
                                 ),
                               ),
@@ -3033,35 +3050,43 @@ class AdminOperationsPanel extends StatelessWidget {
                     autofocus: true,
                     maxLength: 100,
                     decoration: const InputDecoration(
-                      labelText: 'Name (English)',
+                      labelText: 'Name (English) *',
+                      border: OutlineInputBorder(),
                     ),
                   ),
+                  const SizedBox(height: 8),
                   TextField(
                     controller: nameHi,
                     maxLength: 100,
                     decoration: const InputDecoration(
                       labelText: 'Item name (Hindi, optional)',
+                      border: OutlineInputBorder(),
                     ),
                   ),
+                  const SizedBox(height: 8),
                   TextField(
                     controller: price,
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
                     decoration: InputDecoration(
-                      labelText: isVariant ? 'Selling price' : 'Extra price',
+                      labelText: isVariant ? 'Selling price *' : 'Extra price *',
                       prefixText: 'Rs  ',
+                      border: const OutlineInputBorder(),
                     ),
                   ),
-                  if (isVariant)
+                  if (isVariant) ...[
+                    const SizedBox(height: 8),
                     TextField(
                       controller: sku,
                       maxLength: 80,
                       decoration: const InputDecoration(
                         labelText: 'SKU (optional)',
                         hintText: 'THALI-LARGE',
+                        border: OutlineInputBorder(),
                       ),
                     ),
+                  ],
                   if (errorText.isNotEmpty)
                     Align(
                       alignment: Alignment.centerLeft,
@@ -3146,15 +3171,19 @@ class AdminOperationsPanel extends StatelessWidget {
                     controller: name,
                     autofocus: true,
                     decoration: const InputDecoration(
-                      labelText: 'Dish name (English)',
+                      labelText: 'Dish name (English) *',
+                      border: OutlineInputBorder(),
                     ),
                   ),
+                  const SizedBox(height: 10),
                   TextField(
                     controller: nameHi,
                     decoration: const InputDecoration(
                       labelText: 'Item name (Hindi, optional)',
+                      border: OutlineInputBorder(),
                     ),
                   ),
+                  const SizedBox(height: 10),
                   Row(
                     children: [
                       Expanded(
@@ -3165,6 +3194,7 @@ class AdminOperationsPanel extends StatelessWidget {
                           ),
                           decoration: const InputDecoration(
                             labelText: 'Quantity',
+                            border: OutlineInputBorder(),
                           ),
                         ),
                       ),
@@ -3175,27 +3205,40 @@ class AdminOperationsPanel extends StatelessWidget {
                           decoration: const InputDecoration(
                             labelText: 'Unit',
                             hintText: 'piece / bowl',
+                            border: OutlineInputBorder(),
                           ),
                         ),
                       ),
                     ],
                   ),
-                  DropdownButtonFormField<String>(
-                    initialValue: refillPolicy,
-                    decoration: const InputDecoration(labelText: 'Refill rule'),
-                    items: const ['None', 'Limited', 'Unlimited']
-                        .map(
-                          (value) => DropdownMenuItem(
-                            value: value,
-                            child: Text(value),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        setDishState(() => refillPolicy = value);
-                      }
-                    },
+                  const SizedBox(height: 10),
+                  HeadlessSelectField<String>(
+                    label: 'Refill Rule',
+                    prefixIcon: Icons.repeat_rounded,
+                    value: refillPolicy,
+                    items: const [
+                      HeadlessSelectItem(
+                        value: 'None',
+                        label: 'None (No Refills)',
+                        subtitle: 'Included once with thali',
+                        icon: Icons.not_interested_rounded,
+                      ),
+                      HeadlessSelectItem(
+                        value: 'Unlimited',
+                        label: 'Unlimited Refill',
+                        subtitle: 'Guest can request refills anytime',
+                        icon: Icons.all_inclusive_rounded,
+                        iconColor: Color(0xFF16A34A),
+                      ),
+                      HeadlessSelectItem(
+                        value: 'Limited',
+                        label: 'Limited Refill',
+                        subtitle: 'Refill up to specified limit',
+                        icon: Icons.repeat_one_rounded,
+                        iconColor: Color(0xFFF59E0B),
+                      ),
+                    ],
+                    onChanged: (val) => setDishState(() => refillPolicy = val),
                   ),
                   if (refillPolicy == 'Limited')
                     TextField(
@@ -3652,13 +3695,20 @@ class AdminOperationsPanel extends StatelessWidget {
                 TextField(
                   controller: name,
                   decoration: const InputDecoration(
-                    labelText: 'Table name / number',
+                    labelText: 'Table name / number *',
+                    hintText: 'e.g. Table 1 or T-01',
+                    border: OutlineInputBorder(),
                   ),
                 ),
+                const SizedBox(height: 10),
                 TextField(
                   controller: capacity,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Capacity'),
+                  decoration: const InputDecoration(
+                    labelText: 'Capacity (Seats) *',
+                    hintText: '4',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
                 const SizedBox(height: 10),
                 HeadlessSelectField<String>(
@@ -3770,7 +3820,7 @@ class AdminOperationsPanel extends StatelessWidget {
     if (kIsWeb && Uri.base.hasAuthority) {
       return '${Uri.base.origin}/table/${Uri.encodeComponent(token)}';
     }
-    final serverUrl = LocalStorage.instance.getServerUrl();
+    final serverUrl = LocalStorage.getServerUrl() ?? 'https://restaurent-2-xq6f.onrender.com/api/v1';
     final serverRoot = serverUrl.replaceFirst(RegExp(r'/api/v1/?$'), '').replaceFirst(RegExp(r'/$'), '');
     if (serverRoot.isNotEmpty && !serverRoot.contains('10.0.2.2')) {
       return '$serverRoot/table/${Uri.encodeComponent(token)}';
