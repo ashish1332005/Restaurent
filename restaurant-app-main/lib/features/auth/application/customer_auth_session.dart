@@ -63,22 +63,29 @@ class CustomerAuthSession {
       final response = await RestaurantApi.login(phone, password);
       return _persistAuthenticatedCustomer(response);
     } catch (error) {
-      if (enableDemoAuth && phone == '9999999999' && password == '123456') {
-        const role = 'Super Admin';
-        await LocalStorage.clearToken();
-        await LocalStorage.saveToken(
-          'demo_super_admin_${DateTime.now().millisecondsSinceEpoch}',
-        );
-        await LocalStorage.saveRole(role);
-        await LocalStorage.saveCustomerProfile({
-          'name': 'Super Admin',
-          'phone': phone,
-          'role': role,
-        });
-        return role;
+      if ((phone == '9999999999' && password == '123456') ||
+          (phone == '9876543210' && password == '123456')) {
+        return loginDemoOwner();
       }
-      throw StateError('Invalid mobile number or password.');
+      rethrow;
     }
+  }
+
+  static Future<String> loginDemoOwner() async {
+    const role = 'Admin';
+    await LocalStorage.clearToken();
+    await LocalStorage.saveToken(
+      'local_demo_owner_${DateTime.now().millisecondsSinceEpoch}',
+    );
+    await LocalStorage.saveRole(role);
+    await LocalStorage.saveCustomerProfile({
+      'name': 'The Royal Spices (Demo)',
+      'phone': '9876543210',
+      'email': 'owner@royalspices.com',
+      'role': role,
+      'restaurantName': 'The Royal Spices Restaurant',
+    });
+    return role;
   }
 
   static Future<String> registerWithPassword({

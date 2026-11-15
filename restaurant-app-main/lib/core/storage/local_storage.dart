@@ -20,6 +20,28 @@ class LocalStorage {
   static const String _menuBrandingKey = 'published_menu_branding';
   static const String _restaurantTablesKey = 'restaurant_tables';
   static const String _customerTableSessionKey = 'customer_table_session';
+  static const String _serverUrlKey = 'custom_server_url';
+
+  static String? getServerUrl() {
+    try {
+      final box = Hive.box(_boxName);
+      final value = box.get(_serverUrlKey)?.toString().trim();
+      return (value != null && value.isNotEmpty) ? value : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<void> saveServerUrl(String url) async {
+    try {
+      final box = Hive.box(_boxName);
+      var clean = url.trim().replaceFirst(RegExp(r'/$'), '');
+      if (!clean.endsWith('/api/v1')) {
+        clean = '$clean/api/v1';
+      }
+      await box.put(_serverUrlKey, clean);
+    } catch (_) {}
+  }
 
   static Future<void> init() async {
     await Hive.openBox(_boxName);

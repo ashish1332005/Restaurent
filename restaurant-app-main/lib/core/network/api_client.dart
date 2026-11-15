@@ -4,6 +4,8 @@ import '../storage/local_storage.dart';
 
 class ApiClient {
   static String get baseUrl {
+    final stored = LocalStorage.getServerUrl();
+    if (stored != null && stored.isNotEmpty) return stored;
     const configured = String.fromEnvironment('API_BASE_URL');
     if (configured.trim().isNotEmpty) return configured.trim();
     if (kIsWeb) {
@@ -11,6 +13,14 @@ class ApiClient {
       return 'http://$host:5000/api/v1';
     }
     return 'http://10.0.2.2:5000/api/v1';
+  }
+
+  static void updateBaseUrl(String newUrl) {
+    var clean = newUrl.trim().replaceFirst(RegExp(r'/$'), '');
+    if (!clean.endsWith('/api/v1')) {
+      clean = '$clean/api/v1';
+    }
+    _dio.options.baseUrl = clean;
   }
 
   static final Dio _dio = Dio(

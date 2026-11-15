@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/network/api_client.dart';
 import '../../../core/network/restaurant_api.dart';
+import '../../../core/storage/local_storage.dart';
 import '../application/customer_auth_session.dart';
 import 'widgets/owner_auth_shell.dart';
 
@@ -93,9 +95,69 @@ class _RestaurantRegisterScreenState extends State<RestaurantRegisterScreen> {
       if (mounted)
         setState(() {
           loading = false;
-          error = RestaurantApi.messageFor(exception);
+          final msg = RestaurantApi.messageFor(exception);
+          error = msg.contains('Cannot connect')
+              ? '$msg\nTip: Configure your Render backend URL in Server Settings or continue in Offline Demo Mode.'
+              : msg;
         });
     }
+  }
+
+  Future<void> _showServerConfigDialog() async {
+    final serverInput = TextEditingController(text: ApiClient.baseUrl);
+    await showDialog<void>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.dns_rounded, color: Color(0xFFC99B4C)),
+            SizedBox(width: 8),
+            Text('Server Backend URL'),
+          ],
+        ),
+        content: SizedBox(
+          width: 440,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Enter your live Render or server backend address:',
+                style: TextStyle(fontSize: 13, color: Colors.black87),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: serverInput,
+                decoration: const InputDecoration(
+                  labelText: 'API Base URL',
+                  hintText: 'https://your-service.onrender.com/api/v1',
+                  prefixIcon: Icon(Icons.link),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final newUrl = serverInput.text.trim();
+              if (newUrl.isNotEmpty) {
+                await LocalStorage.saveServerUrl(newUrl);
+                ApiClient.updateBaseUrl(newUrl);
+                if (mounted) setState(() {});
+              }
+              if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+            },
+            child: const Text('Save & Apply'),
+          ),
+        ],
+      ),
+    );
   }
 
   void showError(String value) => setState(() => error = value);
@@ -283,7 +345,61 @@ class _RestaurantRegisterScreenState extends State<RestaurantRegisterScreen> {
               icon: const Icon(Icons.arrow_back_rounded),
               label: const Text('Back to previous step'),
             ),
-          ],          const SizedBox(height: 14),
+          ],          if (error != null && error!.contains('Cannot connect')) ...[
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFFD66A2C), width: 1.5),
+                foregroundColor: const Color(0xFFD66A2C),
+                minimumSize: const Size.fromHeight(48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(13),
+                ),
+              ),
+              onPressed: () async {
+                final digits = phone.text.replaceAll(RegExp(r'\D'), '');
+                await LocalStorage.clearToken();
+                await LocalStorage.saveToken(
+                  'local_owner_${DateTime.now().millisecondsSinceEpoch}',
+                );
+                await LocalStorage.saveRole('Admin');
+                await LocalStorage.saveCustomerProfile({
+                  'name': owner.text.trim().isEmpty ? 'Restaurant Owner' : owner.text.trim(),
+                  'phone': digits.isEmpty ? '9876543210' : digits,
+                  'email': email.text.trim(),
+                  'role': 'Admin',
+                  'restaurantName': restaurant.text.trim().isEmpty ? 'My Restaurant' : restaurant.text.trim(),
+                });
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('🎉 Registered in Offline Demo Mode! Welcome to Restaurant OS.'),
+                      backgroundColor: Color(0xFF237A59),
+                    ),
+                  );
+                  context.go('/admin');
+                }
+              },
+              icon: const Icon(Icons.bolt_rounded),
+              label: const Text(
+                'Continue in Offline Demo Mode',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          Center(
+            child: TextButton.icon(
+              onPressed: _showServerConfigDialog,
+              icon: const Icon(Icons.settings_ethernet_rounded, size: 16, color: Color(0xFF9E8B75)),
+              label: Text(
+                'Server: ${ApiClient.baseUrl}',
+                style: const TextStyle(fontSize: 11, color: Color(0xFF9E8B75)),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           Wrap(
             alignment: WrapAlignment.center,
             crossAxisAlignment: WrapCrossAlignment.center,

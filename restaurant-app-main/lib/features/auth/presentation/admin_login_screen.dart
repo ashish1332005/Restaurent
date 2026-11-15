@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/network/api_client.dart';
+import '../../../core/network/restaurant_api.dart';
+import '../../../core/storage/local_storage.dart';
 import '../application/customer_auth_session.dart';
 import 'widgets/owner_auth_shell.dart';
 
@@ -67,9 +71,79 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       if (mounted)
         setState(() {
           loading = false;
-          error = exception.toString().replaceFirst('Bad state: ', '');
+          final msg = exception is DioException
+              ? RestaurantApi.messageFor(exception)
+              : exception.toString().replaceFirst('Bad state: ', '');
+          error = msg.contains('Cannot connect')
+              ? '$msg\nTip: Configure your Render backend URL in Server Settings or tap "Try Demo Mode".'
+              : msg;
         });
     }
+  }
+
+  Future<void> _showServerConfigDialog() async {
+    final serverInput = TextEditingController(text: ApiClient.baseUrl);
+    await showDialog<void>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.dns_rounded, color: Color(0xFFC99B4C)),
+            SizedBox(width: 8),
+            Text('Server Backend URL'),
+          ],
+        ),
+        content: SizedBox(
+          width: 440,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Enter your live Render or server backend address:',
+                style: TextStyle(fontSize: 13, color: Colors.black87),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: serverInput,
+                decoration: const InputDecoration(
+                  labelText: 'API Base URL',
+                  hintText: 'https://your-service.onrender.com/api/v1',
+                  prefixIcon: Icon(Icons.link),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'e.g. https://your-service.onrender.com/api/v1\nor http://192.168.1.x:5000/api/v1 for local testing.',
+                style: TextStyle(fontSize: 11, color: Colors.black54),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final newUrl = serverInput.text.trim();
+              if (newUrl.isNotEmpty) {
+                await LocalStorage.saveServerUrl(newUrl);
+                ApiClient.updateBaseUrl(newUrl);
+                if (mounted) {
+                  setState(() {});
+                  message('Server URL updated to $newUrl');
+                }
+              }
+              if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+            },
+            child: const Text('Save & Apply'),
+          ),
+        ],
+      ),
+    );
   }
 
   void message(String text) => ScaffoldMessenger.of(context).showSnackBar(
@@ -303,7 +377,42 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
             ),
             label: const Text('Continue with Google'),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 14),
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(50),
+              side: const BorderSide(color: Color(0xFFD66A2C), width: 1.5),
+              foregroundColor: const Color(0xFFD66A2C),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(13),
+              ),
+            ),
+            onPressed: () async {
+              await CustomerAuthSession.loginDemoOwner();
+              if (context.mounted) {
+                message('Signed in as Restaurant Admin (Demo Mode)');
+                context.go('/admin');
+              }
+            },
+            icon: const Icon(Icons.bolt_rounded, color: Color(0xFFD66A2C)),
+            label: const Text(
+              'Try Demo Mode (Instant Access)',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Center(
+            child: TextButton.icon(
+              onPressed: _showServerConfigDialog,
+              icon: const Icon(Icons.settings_ethernet_rounded, size: 16, color: Color(0xFF9E8B75)),
+              label: Text(
+                'Server: ${ApiClient.baseUrl}',
+                style: const TextStyle(fontSize: 11, color: Color(0xFF9E8B75)),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
