@@ -970,14 +970,22 @@
         const fromQuery = urlParams.get('table') || urlParams.get('token') || urlParams.get('code') || urlParams.get('t') || urlParams.get('tableCode');
         if (fromQuery && fromQuery.trim()) return fromQuery.trim();
 
+        const hash = window.location.hash || '';
+        const matchHash = hash.match(/(?:table|token|code)[\/=]([^\/?#&]+)/i);
+        if (matchHash && matchHash[1]) return matchHash[1].trim();
+
         const parts = window.location.pathname.split('/').filter(Boolean);
         const last = parts.pop() || '';
-        if (last && !['table', 'menu', 'order', 'menu.html', 'index.html'].includes(last.toLowerCase())) {
+        if (last && !['table', 'menu', 'order', 'menu.html', 'index.html', 'restaurent'].includes(last.toLowerCase())) {
           return last;
         }
       } catch (e) {}
       return 'default';
     }
+
+    const API_BASE = (window.location.hostname.includes('github.io') || window.location.protocol === 'file:')
+      ? 'https://restaurent-2-xq6f.onrender.com/api/v1'
+      : '/api/v1';
 
     let tableCode = resolveTableCode();
     let currentTable = null;
@@ -1034,7 +1042,8 @@
 
     async function fetchTableAndMenu() {
       try {
-        const res = await fetch('/api/v1/qr/table/' + encodeURIComponent(tableCode));
+        const codeParam = (tableCode && tableCode !== 'default') ? encodeURIComponent(tableCode) : 'default';
+        const res = await fetch(API_BASE + '/qr/table/' + codeParam);
         const json = await res.json();
         if (!json.success) {
           document.getElementById('menuContainer').innerHTML = `
@@ -1283,7 +1292,7 @@
           headers['x-table-session-token'] = activeSession.sessionToken;
         }
 
-        const res = await fetch('/api/v1/qr/table/' + encodeURIComponent(tableCode) + '/order', {
+        const res = await fetch(API_BASE + '/qr/table/' + encodeURIComponent(tableCode) + '/order', {
           method: 'POST',
           headers,
           body: JSON.stringify({
@@ -1327,7 +1336,7 @@
     async function pollOrderStatus() {
       if (!activeSession || !activeSession.sessionToken) return;
       try {
-        const res = await fetch('/api/v1/qr/table/' + encodeURIComponent(tableCode) + '/order-status', {
+        const res = await fetch(API_BASE + '/qr/table/' + encodeURIComponent(tableCode) + '/order-status', {
           headers: { 'x-table-session-token': activeSession.sessionToken }
         });
         const json = await res.json();
@@ -1358,7 +1367,7 @@
         return;
       }
       try {
-        const res = await fetch('/api/v1/qr/table/' + encodeURIComponent(tableCode) + '/request', {
+        const res = await fetch(API_BASE + '/qr/table/' + encodeURIComponent(tableCode) + '/request', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1383,7 +1392,7 @@
         return;
       }
       try {
-        const res = await fetch('/api/v1/qr/table/' + encodeURIComponent(tableCode) + '/order-status', {
+        const res = await fetch(API_BASE + '/qr/table/' + encodeURIComponent(tableCode) + '/order-status', {
           headers: { 'x-table-session-token': activeSession.sessionToken }
         });
         const json = await res.json();

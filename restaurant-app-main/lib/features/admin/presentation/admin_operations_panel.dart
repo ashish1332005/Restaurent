@@ -4230,16 +4230,12 @@ class AdminOperationsPanel extends StatelessWidget {
     final target = clean.isNotEmpty ? clean : '1';
     const configured = String.fromEnvironment('CUSTOMER_APP_URL');
     final base = configured.trim().replaceFirst(RegExp(r'/$'), '');
-    if (base.isNotEmpty) return '$base/table/${Uri.encodeComponent(target)}';
+    if (base.isNotEmpty) return '$base/?table=${Uri.encodeComponent(target)}';
     if (kIsWeb && Uri.base.hasAuthority) {
-      return '${Uri.base.origin}/table/${Uri.encodeComponent(target)}';
+      return '${Uri.base.origin}/?table=${Uri.encodeComponent(target)}';
     }
-    final serverUrl = LocalStorage.getServerUrl() ?? 'https://restaurent-2-xq6f.onrender.com/api/v1';
-    final serverRoot = serverUrl.replaceFirst(RegExp(r'/api/v1/?$'), '').replaceFirst(RegExp(r'/$'), '');
-    if (serverRoot.isNotEmpty && !serverRoot.contains('10.0.2.2')) {
-      return '$serverRoot/table/${Uri.encodeComponent(target)}';
-    }
-    return 'https://restaurent-2-xq6f.onrender.com/table/${Uri.encodeComponent(target)}';
+    // High-performance GitHub Pages web menu with zero cold starts and instant CDN delivery
+    return 'https://ashish1332005.github.io/Restaurent/?table=${Uri.encodeComponent(target)}';
   }
 
   Future<void> _showQr(
@@ -4253,7 +4249,7 @@ class AdminOperationsPanel extends StatelessWidget {
       builder: (dialogContext) => AlertDialog(
         title: Row(
           children: [
-            const Icon(Icons.qr_code_2_rounded, color: HospitalityColors.inkBlue),
+            const Icon(Icons.qr_code_2_rounded, color: HospitalityColors.ink),
             const SizedBox(width: 8),
             Expanded(child: Text('$tableName QR')),
           ],
