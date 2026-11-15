@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/network/restaurant_api.dart';
+import '../../../core/theme/headless_select_field.dart';
 
 class AdminStaffPanel extends StatefulWidget {
   const AdminStaffPanel({super.key, required this.branchId});
@@ -318,33 +319,61 @@ class _AdminStaffPanelState extends State<AdminStaffPanel> {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 10),
-                  DropdownButtonFormField<String>(
-                    initialValue: roleId,
-                    decoration: const InputDecoration(labelText: 'Role'),
+                  const SizedBox(height: 12),
+                  HeadlessSelectField<String>(
+                    label: 'Role / Designation',
+                    prefixIcon: Icons.badge_outlined,
+                    value: roleId,
                     items: availableRoles
                         .map(
-                          (r) => DropdownMenuItem(
+                          (r) => HeadlessSelectItem(
                             value: '${r['_id']}',
-                            child: Text('${r['name']}'),
+                            label: '${r['name']}',
+                            subtitle: r['name'] == 'Waiter'
+                                ? 'Take table orders, manage floor service'
+                                : r['name'] == 'Kitchen'
+                                ? 'View live KDS, mark items cooking and ready'
+                                : r['name'] == 'Cashier'
+                                ? 'Settle bills and handle payments'
+                                : 'Manager access to restaurant',
+                            icon: r['name'] == 'Waiter'
+                                ? Icons.room_service_rounded
+                                : r['name'] == 'Kitchen'
+                                ? Icons.soup_kitchen_rounded
+                                : r['name'] == 'Cashier'
+                                ? Icons.point_of_sale_rounded
+                                : Icons.manage_accounts_rounded,
                           ),
                         )
                         .toList(),
                     onChanged: (v) => setDialog(() => roleId = v),
                   ),
                   if (editing) ...[
-                    const SizedBox(height: 10),
-                    DropdownButtonFormField<String>(
-                      initialValue: status,
-                      decoration: const InputDecoration(
-                        labelText: 'Account status',
-                      ),
-                      items: ['Active', 'Inactive', 'Suspended']
-                          .map(
-                            (v) => DropdownMenuItem(value: v, child: Text(v)),
-                          )
-                          .toList(),
-                      onChanged: (v) => setDialog(() => status = v ?? status),
+                    HeadlessSelectField<String>(
+                      label: 'Account status',
+                      prefixIcon: Icons.shield_outlined,
+                      value: status,
+                      items: const [
+                        HeadlessSelectItem(
+                          value: 'Active',
+                          label: 'Active (Can login and work)',
+                          icon: Icons.check_circle_rounded,
+                          iconColor: Color(0xFF16A34A),
+                        ),
+                        HeadlessSelectItem(
+                          value: 'Inactive',
+                          label: 'Inactive (Login disabled)',
+                          icon: Icons.pause_circle_rounded,
+                          iconColor: Color(0xFFF59E0B),
+                        ),
+                        HeadlessSelectItem(
+                          value: 'Suspended',
+                          label: 'Suspended',
+                          icon: Icons.block_rounded,
+                          iconColor: Color(0xFFDC2626),
+                        ),
+                      ],
+                      onChanged: (v) => setDialog(() => status = v),
                     ),
                   ],
                 ],

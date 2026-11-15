@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/network/restaurant_api.dart';
 import '../../../core/theme/hospitality_theme.dart';
+import '../../../core/theme/headless_select_field.dart';
 
 class AdminPosPanel extends StatefulWidget {
   const AdminPosPanel({
@@ -520,30 +521,28 @@ class _AdminPosPanelState extends State<AdminPosPanel> {
           ),
         ),
         const SizedBox(height: 14),
-        DropdownButtonFormField<String?>(
-          initialValue: tableId,
-          isExpanded: true,
-          decoration: const InputDecoration(
-            labelText: 'Order type / table',
-            border: OutlineInputBorder(),
-          ),
+        HeadlessSelectField<String?>(
+          label: 'Order type / table',
+          prefixIcon: Icons.table_restaurant_rounded,
+          value: tableId,
           items: [
-            const DropdownMenuItem<String?>(
+            const HeadlessSelectItem(
               value: null,
-              child: Text('Takeaway'),
+              label: 'Takeaway / Parcel',
+              subtitle: 'Counter takeaway without table seating',
+              icon: Icons.takeout_dining_rounded,
             ),
             ...widget.tables
                 .where((table) => table['status'] != 'Cleaning')
                 .map(
-                  (table) => DropdownMenuItem<String?>(
+                  (table) => HeadlessSelectItem(
                     value: '${table['_id']}',
-                    child: Text(
-                      (table['name'] ?? 'Table').toString() +
-                          ' - ' +
-                          (table['status'] ?? 'Available').toString(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    label: '${table['name'] ?? 'Table'} (${table['status'] ?? 'Available'})',
+                    subtitle: 'Capacity: ${table['capacity'] ?? 4} Seats',
+                    icon: Icons.table_restaurant_rounded,
+                    iconColor: table['status'] == 'Occupied'
+                        ? const Color(0xFFEA580C)
+                        : const Color(0xFF16A34A),
                   ),
                 ),
           ],
@@ -870,15 +869,48 @@ class _AdminPosPanelState extends State<AdminPosPanel> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              DropdownButtonFormField<String>(
-                initialValue: method,
-                items: ['Cash', 'Card', 'UPI', 'Wallet', 'Split']
-                    .map(
-                      (value) =>
-                          DropdownMenuItem(value: value, child: Text(value)),
-                    )
-                    .toList(),
-                onChanged: (value) => setDialog(() => method = value ?? 'Cash'),
+              HeadlessSelectField<String>(
+                label: 'Payment Method',
+                prefixIcon: Icons.payments_rounded,
+                value: method,
+                items: const [
+                  HeadlessSelectItem(
+                    value: 'Cash',
+                    label: 'Cash Payment',
+                    subtitle: 'Accept physical cash currency',
+                    icon: Icons.payments_outlined,
+                    iconColor: Color(0xFF16A34A),
+                  ),
+                  HeadlessSelectItem(
+                    value: 'UPI',
+                    label: 'UPI / QR Code',
+                    subtitle: 'Google Pay, PhonePe, Paytm, BHIM',
+                    icon: Icons.qr_code_2_rounded,
+                    iconColor: Color(0xFF245DE8),
+                  ),
+                  HeadlessSelectItem(
+                    value: 'Card',
+                    label: 'Card Payment',
+                    subtitle: 'Credit / Debit card swipe on POS machine',
+                    icon: Icons.credit_card_rounded,
+                    iconColor: Color(0xFF7140C5),
+                  ),
+                  HeadlessSelectItem(
+                    value: 'Wallet',
+                    label: 'Digital Wallet',
+                    subtitle: 'Paytm, Amazon Pay wallet balance',
+                    icon: Icons.account_balance_wallet_outlined,
+                    iconColor: Color(0xFFD66A2C),
+                  ),
+                  HeadlessSelectItem(
+                    value: 'Split',
+                    label: 'Split Bill (Cash + UPI)',
+                    subtitle: 'Partial cash payment and remaining on UPI',
+                    icon: Icons.call_split_rounded,
+                    iconColor: Color(0xFF0F172A),
+                  ),
+                ],
+                onChanged: (value) => setDialog(() => method = value),
               ),
               if (method == 'Split')
                 TextField(

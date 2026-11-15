@@ -12,6 +12,7 @@ import '../../../core/network/restaurant_api.dart';
 import '../../../core/storage/local_storage.dart';
 import '../../../core/theme/hospitality_theme.dart';
 import '../../../core/theme/royal_admin_ui.dart';
+import '../../../core/theme/headless_select_field.dart';
 import '../../../core/services/qr_download_service.dart';
 import 'admin_attendance_panel.dart';
 import 'admin_inventory_panel.dart';
@@ -2197,40 +2198,43 @@ class AdminOperationsPanel extends StatelessWidget {
                             'Menu setup',
                             'Category, meal type and guest preferences',
                           ),
-                          DropdownButtonFormField<String>(
-                            initialValue: categoryId,
-                            decoration: const InputDecoration(
-                              labelText: 'Category',
-                            ),
+                          HeadlessSelectField<String>(
+                            label: 'Category',
+                            prefixIcon: Icons.folder_outlined,
+                            value: categoryId,
                             items: categories
                                 .map(
-                                  (category) => DropdownMenuItem(
+                                  (category) => HeadlessSelectItem(
                                     value: '${category['_id']}',
-                                    child: Text('${category['name']}'),
+                                    label: '${category['name']}',
+                                    subtitle: category['nameHi'] != null ? '${category['nameHi']}' : null,
+                                    icon: Icons.category_rounded,
                                   ),
                                 )
                                 .toList(),
                             onChanged: (value) {
-                              if (value != null) categoryId = value;
+                              setDialogState(() => categoryId = value);
                             },
                           ),
-                          DropdownButtonFormField<String>(
-                            initialValue: itemType,
-                            decoration: const InputDecoration(
-                              labelText: 'Item type',
-                            ),
+                          HeadlessSelectField<String>(
+                            label: 'Item type',
+                            prefixIcon: Icons.dinner_dining_rounded,
+                            value: itemType,
                             items: itemTypes
                                 .map(
-                                  (type) => DropdownMenuItem(
+                                  (type) => HeadlessSelectItem(
                                     value: type,
-                                    child: Text(type),
+                                    label: type,
+                                    subtitle: type == 'Thali' ? 'Multi-dish thali with refill policies' : 'Standard à la carte dish',
+                                    icon: type == 'Thali' ? Icons.set_meal_rounded : Icons.restaurant_rounded,
                                   ),
                                 )
                                 .toList(),
                             onChanged: (value) {
-                              if (value != null) {
-                                setDialogState(() => itemType = value);
-                              }
+                              setDialogState(() {
+                                itemType = value;
+                                isThali = value == 'Thali';
+                              });
                             },
                           ),
                           ExpansionTile(
@@ -2240,26 +2244,26 @@ class AdminOperationsPanel extends StatelessWidget {
                               'Optional customer-facing details',
                             ),
                             children: [
-                              DropdownButtonFormField<String>(
-                                initialValue: spiceLevel,
-                                decoration: const InputDecoration(
-                                  labelText: 'Spice level',
-                                  prefixIcon: Icon(
-                                    Icons.local_fire_department_outlined,
-                                  ),
-                                ),
+                              HeadlessSelectField<String>(
+                                label: 'Spice level',
+                                prefixIcon: Icons.local_fire_department_rounded,
+                                value: spiceLevel,
                                 items: spiceLevels
                                     .map(
-                                      (level) => DropdownMenuItem(
+                                      (level) => HeadlessSelectItem(
                                         value: level,
-                                        child: Text(level),
+                                        label: level,
+                                        icon: Icons.local_fire_department_rounded,
+                                        iconColor: level == 'Mild'
+                                            ? const Color(0xFF16A34A)
+                                            : level == 'Medium'
+                                            ? const Color(0xFFF59E0B)
+                                            : const Color(0xFFDC2626),
                                       ),
                                     )
                                     .toList(),
                                 onChanged: (value) {
-                                  if (value != null) {
-                                    setDialogState(() => spiceLevel = value);
-                                  }
+                                  setDialogState(() => spiceLevel = value);
                                 },
                               ),
                               const SizedBox(height: 12),
@@ -2664,27 +2668,36 @@ class AdminOperationsPanel extends StatelessWidget {
                             'Publishing',
                             'Control when this item appears on the QR menu',
                           ),
-                          DropdownButtonFormField<String>(
-                            initialValue: publishStatus,
-                            decoration: const InputDecoration(
-                              labelText: 'Customer menu status',
-                              prefixIcon: Icon(Icons.publish_outlined),
-                            ),
+                          HeadlessSelectField<String>(
+                            label: 'Customer menu status',
+                            prefixIcon: Icons.publish_rounded,
+                            value: publishStatus,
                             items: publishStatuses
                                 .map(
-                                  (status) => DropdownMenuItem(
+                                  (status) => HeadlessSelectItem(
                                     value: status,
-                                    child: Text(status),
+                                    label: status == 'Published'
+                                        ? 'Published (Live on QR Menu)'
+                                        : status == 'Hidden'
+                                        ? 'Hidden (Out of stock)'
+                                        : 'Draft / Scheduled',
+                                    subtitle: status == 'Published'
+                                        ? 'Visible to all customers scanning table QR'
+                                        : 'Will not appear on customer mobile menu',
+                                    icon: status == 'Published'
+                                        ? Icons.visibility_rounded
+                                        : Icons.visibility_off_rounded,
+                                    iconColor: status == 'Published'
+                                        ? const Color(0xFF16A34A)
+                                        : const Color(0xFF64748B),
                                   ),
                                 )
                                 .toList(),
                             onChanged: (value) {
-                              if (value != null) {
-                                setDialogState(() {
-                                  publishStatus = value;
-                                  if (value != 'Scheduled') publishAt = null;
-                                });
-                              }
+                              setDialogState(() {
+                                publishStatus = value;
+                                if (value != 'Scheduled') publishAt = null;
+                              });
                             },
                           ),
                           if (publishStatus == 'Scheduled')
@@ -3647,18 +3660,25 @@ class AdminOperationsPanel extends StatelessWidget {
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(labelText: 'Capacity'),
                 ),
-                DropdownButtonFormField<String>(
-                  initialValue: shape,
-                  decoration: const InputDecoration(labelText: 'Shape'),
+                const SizedBox(height: 10),
+                HeadlessSelectField<String>(
+                  label: 'Table Shape',
+                  prefixIcon: Icons.crop_din_rounded,
+                  value: shape,
                   items: const [
-                    DropdownMenuItem(
+                    HeadlessSelectItem(
                       value: 'Rectangle',
-                      child: Text('Rectangle'),
+                      label: 'Rectangle (Standard 4-6 Seats)',
+                      icon: Icons.crop_landscape_rounded,
                     ),
-                    DropdownMenuItem(value: 'Circle', child: Text('Circle')),
+                    HeadlessSelectItem(
+                      value: 'Circle',
+                      label: 'Round Table (Family / Banquet)',
+                      icon: Icons.circle_outlined,
+                    ),
                   ],
                   onChanged: (value) {
-                    if (value != null) setDialogState(() => shape = value);
+                    setDialogState(() => shape = value);
                   },
                 ),
               ],
