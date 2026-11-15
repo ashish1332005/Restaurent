@@ -25,33 +25,48 @@ const mapUserResponse = (user, roleName) => ({
     branchId: user.branchId
 });
 
-const resolveCustomerScope = async () => {
-    const role = await Role.findOne({ name: CUSTOMER_ROLE_NAME });
+const resolveCustomerScope = async (requestedRestaurantId, requestedBranchId) => {
+    let role = await Role.findOne({ name: CUSTOMER_ROLE_NAME });
     if (!role) {
-        const error = new Error('Customer registration is not configured');
-        error.statusCode = 503;
-        throw error;
+        role = await Role.create({
+            name: CUSTOMER_ROLE_NAME,
+            isSystemRole: true,
+            permissions: []
+        });
     }
 
-    const restaurantQuery = process.env.DEFAULT_RESTAURANT_ID
-        ? { _id: process.env.DEFAULT_RESTAURANT_ID, isActive: true }
-        : { isActive: true };
-    const restaurants = await Restaurant.find(restaurantQuery).limit(2);
-    if (restaurants.length !== 1) {
+    let restaurant = null;
+    if (requestedRestaurantId) {
+        restaurant = await Restaurant.findOne({ _id: requestedRestaurantId, isActive: true });
+    }
+    if (!restaurant && process.env.DEFAULT_RESTAURANT_ID) {
+        restaurant = await Restaurant.findOne({ _id: process.env.DEFAULT_RESTAURANT_ID, isActive: true });
+    }
+    if (!restaurant) {
+        restaurant = await Restaurant.findOne({ isActive: true });
+    }
+    if (!restaurant) {
+        restaurant = await Restaurant.findOne({});
+    }
+    if (!restaurant) {
         const error = new Error('Restaurant registration scope is not configured');
         error.statusCode = 503;
         throw error;
     }
 
-    const restaurant = restaurants[0];
-    const branchQuery = process.env.DEFAULT_BRANCH_ID
-        ? {
-            _id: process.env.DEFAULT_BRANCH_ID,
-            restaurantId: restaurant._id,
-            isActive: true
-        }
-        : { restaurantId: restaurant._id, isActive: true };
-    const branch = await Branch.findOne(branchQuery);
+    let branch = null;
+    if (requestedBranchId) {
+        branch = await Branch.findOne({ _id: requestedBranchId, restaurantId: restaurant._id, isActive: true });
+    }
+    if (!branch && process.env.DEFAULT_BRANCH_ID) {
+        branch = await Branch.findOne({ _id: process.env.DEFAULT_BRANCH_ID, restaurantId: restaurant._id, isActive: true });
+    }
+    if (!branch) {
+        branch = await Branch.findOne({ restaurantId: restaurant._id, isActive: true });
+    }
+    if (!branch) {
+        branch = await Branch.findOne({ restaurantId: restaurant._id });
+    }
     if (!branch) {
         const error = new Error('Restaurant branch is not configured');
         error.statusCode = 503;
@@ -164,7 +179,7 @@ exports.registerCustomer = async (req, res, next) => {
         const existing = await User.findOne({ phone: { $in: [phone, `+91${phone}`] } });
         if (existing) return res.status(409).json({ success: false, message: 'An account already exists with this mobile number' });
 
-        const { role, restaurant, branch } = await resolveCustomerScope();
+        const { role, restaurant, branch } = await resolveCustomerScope(req.body.restaurantId, req.body.branchId);
 
         const user = await User.create({
             name,
@@ -376,7 +391,7 @@ exports.googleCustomerAuth = async (req, res, next) => {
             });
         }
 
-        const { role, restaurant, branch } = await resolveCustomerScope();
+        const { role, restaurant, branch } = await resolveCustomerScope(req.body.restaurantId, req.body.branchId);
 
         if (!user) {
             user = await User.create({
@@ -567,4 +582,109 @@ exports.updateDemoProfile = async (req, res, next) => {
     } catch (error) {
         next(error);
     }
+};
+
+
+exports.forgotPassword = async (req, res, next) => {
+    try {
+        const rawPhone = normalizeDigits(req.body.phone);
+        const phone = rawPhone.length > 10 ? rawPhone.slice(-10) : rawPhone;
+        const email = normalizeEmail(req.body.email);
+
+        if (!phone && !email) {
+            return res.status(400).json({ success: false, message: 'Please provide registered phone or email' });
+        }
+
+        const query = phone ? { phone: { $in: [phone, `+91${phone}`] } } : { email };
+        const user = await User.findOne(query).select('+resetPasswordOtp +resetPasswordExpires');
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'No account found with this credential' });
+        }
+
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const hashedOtp = crypto.createHash('sha256').update(otp).digest('hex');
+
+        user.resetPasswordOtp = hashedOtp;
+        user.resetPasswordExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+        await user.save({ validateBeforeSave: false });
+
+        const { sendOtp } = require('../../services/notification.service');
+        await sendOtp(user.phone || phone, otp);
+
+        res.status(200).json({
+            success: true,
+            message: 'OTP has been sent to your registered number/email',
+            devOtp: process.env.NODE_ENV !== 'production' ? otp : undefined
+        });
+    } catch (error) { next(error); }
+};
+
+exports.resetPassword = async (req, res, next) => {
+    try {
+        const rawPhone = normalizeDigits(req.body.phone);
+        const phone = rawPhone.length > 10 ? rawPhone.slice(-10) : rawPhone;
+        const email = normalizeEmail(req.body.email);
+        const otp = String(req.body.otp || '').trim();
+        const newPassword = String(req.body.newPassword || req.body.password || '');
+
+        if (!otp || otp.length !== 6) {
+            return res.status(400).json({ success: false, message: 'Please provide a valid 6-digit OTP' });
+        }
+        if (newPassword.length < 6 || newPassword.length > 72) {
+            return res.status(400).json({ success: false, message: 'Password must be between 6 and 72 characters' });
+        }
+
+        const hashedOtp = crypto.createHash('sha256').update(otp).digest('hex');
+        const query = {
+            ...(phone ? { phone: { $in: [phone, `+91${phone}`] } } : { email }),
+            resetPasswordOtp: hashedOtp,
+            resetPasswordExpires: { $gt: new Date() }
+        };
+
+        const user = await User.findOne(query).select('+resetPasswordOtp +resetPasswordExpires +password').populate('role');
+        if (!user) {
+            return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+        }
+
+        user.password = newPassword;
+        user.resetPasswordOtp = undefined;
+        user.resetPasswordExpires = undefined;
+        await user.save();
+
+        const token = user.getSignedJwtToken();
+        res.status(200).json({
+            success: true,
+            message: 'Password reset successfully',
+            token,
+            data: mapUserResponse(user, user.role?.name || 'User')
+        });
+    } catch (error) { next(error); }
+};
+
+exports.verifyOtp = async (req, res, next) => {
+    try {
+        const rawPhone = normalizeDigits(req.body.phone);
+        const phone = rawPhone.length > 10 ? rawPhone.slice(-10) : rawPhone;
+        const otp = String(req.body.otp || '').trim();
+
+        if (!otp || otp.length !== 6) {
+            return res.status(400).json({ success: false, message: 'Please provide a valid 6-digit OTP' });
+        }
+
+        const hashedOtp = crypto.createHash('sha256').update(otp).digest('hex');
+        const user = await User.findOne({
+            phone: { $in: [phone, `+91${phone}`] },
+            resetPasswordOtp: hashedOtp,
+            resetPasswordExpires: { $gt: new Date() }
+        });
+
+        if (!user) {
+            return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+        }
+
+        user.phoneVerified = true;
+        await user.save({ validateBeforeSave: false });
+
+        res.status(200).json({ success: true, message: 'Phone number verified successfully' });
+    } catch (error) { next(error); }
 };

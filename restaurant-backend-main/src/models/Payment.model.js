@@ -33,6 +33,11 @@ const paymentSchema = new mongoose.Schema({
         enum: ['Manual', 'Razorpay', 'Stripe'],
         default: 'Manual'
     },
+    providerOrderId: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     providerPaymentId: {
         type: String,
         trim: true,

@@ -18,7 +18,9 @@ const restaurantCustomerSchema = new mongoose.Schema({
     averageBill: { type: Number, default: 0, min: 0 },
     itemStats: { type: [dishStatSchema], default: [] },
     favoriteDish: { type: String, default: '' },
-    favoriteDishQuantity: { type: Number, default: 0, min: 0 }
+    favoriteDishQuantity: { type: Number, default: 0, min: 0 },
+    loyaltyPoints: { type: Number, default: 0, min: 0 },
+    loyaltyPointsRedeemed: { type: Number, default: 0, min: 0 }
 }, { timestamps: true });
 
 restaurantCustomerSchema.index({ restaurantId: 1, phone: 1 }, { unique: true });

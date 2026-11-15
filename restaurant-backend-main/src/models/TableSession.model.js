@@ -10,5 +10,5 @@ const tableSessionSchema = new mongoose.Schema({
     closedAt: { type: Date, default: null }
 }, { timestamps: true });
 tableSessionSchema.index({ tableId: 1 }, { unique: true, partialFilterExpression: { status: 'Active' } });
-tableSessionSchema.index({ customerPhone: 1 }, { unique: true, partialFilterExpression: { status: 'Active' } });
+tableSessionSchema.index({ branchId: 1, customerPhone: 1 }, { unique: true, partialFilterExpression: { status: 'Active' } });
 module.exports = mongoose.model('TableSession', tableSessionSchema);

@@ -1,4 +1,4 @@
-﻿const ServiceRequest = require('../../models/ServiceRequest.model');
+const ServiceRequest = require('../../models/ServiceRequest.model');
 const { assertBranchAccess, isSuperAdmin } = require('../../utils/access-scope');
 const socketService = require('../../services/socket.service');
 
@@ -29,7 +29,11 @@ exports.update = async (req, res, next) => {
       if (!record.acknowledgedBy) { record.acknowledgedBy = req.user._id; record.acknowledgedAt = new Date(); }
     }
     await record.save();
-    try { socketService.getIo().to(`branch_${record.branchId}`).emit('tableServiceUpdated', record); } catch (_) {}
+    try {
+      const io = socketService.getIo();
+      io.to(`branch_${record.branchId}`).emit('tableServiceUpdated', record);
+      io.to(`table_${record.tableId}`).emit('tableServiceUpdated', record);
+    } catch (_) {}
     res.json({ success: true, data: record });
   } catch (error) { next(error); }
 };

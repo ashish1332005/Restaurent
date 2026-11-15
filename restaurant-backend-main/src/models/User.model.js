@@ -102,6 +102,18 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: ['Active', 'Inactive', 'Suspended'],
         default: 'Active'
+    },
+    resetPasswordOtp: {
+        type: String,
+        select: false
+    },
+    resetPasswordExpires: {
+        type: Date,
+        select: false
+    },
+    phoneVerified: {
+        type: Boolean,
+        default: false
     }
 }, {
     timestamps: true

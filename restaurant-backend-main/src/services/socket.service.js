@@ -38,12 +38,24 @@ module.exports = {
         io.use(async (socket, next) => {
             try {
                 const token = getToken(socket);
-                if (!token) return next(new Error('Authentication required'));
-                const decoded = jwt.verify(token, process.env.JWT_SECRET);
-                const user = await User.findById(decoded.id).populate('role');
-                if (!user || user.status !== 'Active' || !user.role) return next(new Error('Account is not authorized'));
-                socket.user = user;
-                next();
+                const tableCode = socket.handshake.auth?.tableCode || socket.handshake.query?.tableCode;
+
+                if (token) {
+                    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                    const user = await User.findById(decoded.id).populate('role');
+                    if (user && user.status === 'Active' && user.role) {
+                        socket.user = user;
+                        return next();
+                    }
+                }
+
+                if (tableCode) {
+                    socket.isCustomer = true;
+                    socket.tableCode = String(tableCode).trim();
+                    return next();
+                }
+
+                return next(new Error('Authentication required'));
             } catch (_) {
                 next(new Error('Authentication required'));
             }
@@ -52,7 +64,7 @@ module.exports = {
         io.on('connection', (socket) => {
             socket.on('joinBranch', async (branchId, callback) => {
                 try {
-                    if (!await canJoinBranch(socket.user, branchId)) {
+                    if (!socket.user || !await canJoinBranch(socket.user, branchId)) {
                         const payload = { success: false, message: 'Branch access denied' };
                         if (typeof callback === 'function') callback(payload);
                         return socket.emit('socketError', payload);
@@ -62,6 +74,27 @@ module.exports = {
                     if (typeof callback === 'function') callback({ success: true, room });
                 } catch (_) {
                     const payload = { success: false, message: 'Unable to join branch' };
+                    if (typeof callback === 'function') callback(payload);
+                    socket.emit('socketError', payload);
+                }
+            });
+
+            socket.on('joinTable', async (data, callback) => {
+                try {
+                    const code = (typeof data === 'string' ? data : data?.tableCode) || socket.tableCode;
+                    const Table = require('../models/Table.model');
+                    const { hashTableQrToken } = require('../utils/table-qr');
+                    const table = await Table.findOne({ qrTokenHash: hashTableQrToken(code), qrTokenActive: true }).lean();
+                    if (!table) {
+                        const payload = { success: false, message: 'Table not found' };
+                        if (typeof callback === 'function') callback(payload);
+                        return socket.emit('socketError', payload);
+                    }
+                    const room = `table_${table._id}`;
+                    socket.join(room);
+                    if (typeof callback === 'function') callback({ success: true, room, tableId: table._id });
+                } catch (_) {
+                    const payload = { success: false, message: 'Unable to join table' };
                     if (typeof callback === 'function') callback(payload);
                     socket.emit('socketError', payload);
                 }

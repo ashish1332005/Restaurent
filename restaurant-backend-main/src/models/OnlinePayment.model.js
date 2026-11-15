@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const onlinePaymentSchema = new mongoose.Schema({
   orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true, index: true },
+  orderIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Order' }],
   tableSessionId: { type: mongoose.Schema.Types.ObjectId, ref: 'TableSession', required: true },
   provider: { type: String, enum: ['Razorpay'], default: 'Razorpay' },
   providerLinkId: { type: String, required: true, unique: true },

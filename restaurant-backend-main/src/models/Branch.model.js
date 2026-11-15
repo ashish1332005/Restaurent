@@ -22,6 +22,41 @@ const branchSchema = new mongoose.Schema({
         phone: String,
         email: String
     },
+    gstNumber: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    fssaiNumber: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    invoiceHeader: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    invoiceFooter: {
+        type: String,
+        trim: true,
+        default: 'Thank you! Please visit again.'
+    },
+    upiId: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    googleReviewUrl: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    wifiPassword: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     timezone: {
         type: String,
         trim: true,

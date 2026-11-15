@@ -6,6 +6,7 @@ const controller = require('./coupons.controller');
 
 const router = express.Router();
 router.get('/available', controller.getAvailableCoupons);
+router.post('/validate', controller.validateCoupon);
 router.use(protect);
 router.use(requireActiveSubscription);
 router.get('/', authorize('Restaurant Admin', 'Manager'), controller.getAdminCoupons);

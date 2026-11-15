@@ -56,10 +56,52 @@ router.get('/table/:tableCode', async (req, res, next) => {
       ...item,
       imageUrl: item.imageUrl || item.image || ''
     }));
-    res.json({ success: true, data: { table, branch, restaurant, menu: customerMenu } });
+
+    const bestsellers = customerMenu.filter((item) => item.isPopular);
+    const chefSpecials = customerMenu.filter((item) => item.isFeatured);
+    const quickBites = customerMenu.filter((item) => item.preparationTime && item.preparationTime <= 15);
+    const dietaryTags = [...new Set(customerMenu.flatMap((item) => item.dietaryTags || []))];
+
+    res.json({
+      success: true,
+      data: {
+        table,
+        branch,
+        restaurant,
+        menu: customerMenu,
+        highlights: {
+          bestsellers,
+          chefSpecials,
+          quickBites,
+          dietaryTags
+        },
+        services: {
+          wifiPassword: branch?.wifiPassword || '',
+          googleReviewUrl: branch?.googleReviewUrl || ''
+        }
+      }
+    });
   } catch (error) {
     next(error);
   }
+});
+
+router.get('/table/:tableCode/customer-info', async (req, res, next) => {
+  try {
+    const table = await findTableByToken(normalizeTableToken(req.params.tableCode)).lean();
+    if (!table) return res.status(404).json({ success: false, message: 'Table QR not found' });
+    const branch = await Branch.findById(table.branchId).lean();
+    if (!branch) return res.status(404).json({ success: false, message: 'Branch not found' });
+
+    const phone = normalizePhone(req.query.phone);
+    if (!phone || phone.length !== 10) {
+      return res.status(400).json({ success: false, message: 'Valid 10-digit mobile number is required' });
+    }
+
+    const { getCustomerLoyaltyInfo } = require('../../services/customer-loyalty.service');
+    const loyalty = await getCustomerLoyaltyInfo(branch.restaurantId, phone);
+    res.json({ success: true, data: loyalty });
+  } catch (error) { next(error); }
 });
 
 router.post('/table/:tableCode/order', async (req, res, next) => {
@@ -130,7 +172,7 @@ router.post('/table/:tableCode/order', async (req, res, next) => {
     if (tableSession && (!suppliedSessionToken || hashSessionToken(suppliedSessionToken) !== tableSession.tokenHash)) return res.status(401).json({ success: false, message: 'Primary customer session token is required for an additional order.' });
     let tableSessionToken = null;
     if (!tableSession) {
-      if (table.status !== 'Available') return res.status(409).json({ success: false, message: 'This table is not available for a new customer session.' });
+      if (table.status === 'Cleaning') return res.status(409).json({ success: false, message: 'This table is currently being cleaned. Please wait.' });
       tableSessionToken = createSessionToken();
       try {
         await TableSession.create({ tableId: table._id, branchId: table.branchId, customerName, customerPhone, tokenHash: hashSessionToken(tableSessionToken), expiresAt: new Date(now.getTime() + 4 * 60 * 60 * 1000) });
@@ -162,8 +204,38 @@ router.post('/table/:tableCode/order', async (req, res, next) => {
 
     const calculatedSubTotal = toMoney(items.reduce((sum, item) => sum + item.price * item.quantity, 0));
     const tax = toMoney(items.reduce((sum, item) => sum + (item.price * item.quantity * Number(menuById.get(String(item.menuItem)).taxRate || 0) / 100), 0));
-    const discount = 0;
-    const total = toMoney(calculatedSubTotal + tax);
+    
+    let discount = 0;
+    let couponCode = req.body.couponCode ? String(req.body.couponCode).trim().toUpperCase() : null;
+    let appliedCoupon = null;
+    if (couponCode) {
+      const { validateAndCalculateCoupon } = require('../../utils/coupon-helper');
+      const result = await validateAndCalculateCoupon({
+        couponCode,
+        restaurantId: restaurant._id,
+        branchId: table.branchId,
+        subTotal: calculatedSubTotal
+      });
+      discount = result.discount;
+      appliedCoupon = result.coupon;
+    }
+
+    let loyaltyDiscount = 0;
+    let redeemedPoints = 0;
+    const requestedPoints = Math.max(0, Math.floor(Number(req.body.redeemPoints || 0)));
+    if (requestedPoints > 0) {
+      const { redeemLoyaltyPoints } = require('../../services/customer-loyalty.service');
+      const maxAllowedPoints = Math.max(0, calculatedSubTotal - discount);
+      loyaltyDiscount = await redeemLoyaltyPoints({
+        restaurantId: restaurant._id,
+        phone: customerPhone,
+        pointsToRedeem: Math.min(requestedPoints, maxAllowedPoints)
+      });
+      redeemedPoints = loyaltyDiscount;
+    }
+
+    const totalDiscount = toMoney(discount + loyaltyDiscount);
+    const total = Math.max(0, toMoney(calculatedSubTotal + tax - totalDiscount));
 
     const order = await Order.create({
       branchId: table.branchId,
@@ -175,12 +247,21 @@ router.post('/table/:tableCode/order', async (req, res, next) => {
       items,
       subTotal: calculatedSubTotal,
       tax,
-      discount,
+      discount: totalDiscount,
+      couponCode,
+      couponDiscount: discount,
+      loyaltyDiscount,
+      redeemedPoints,
       total,
       kitchenNotes: req.body.kitchenNotes || '',
       status: 'Pending',
       paymentStatus: 'Unpaid'
     });
+
+    if (appliedCoupon) {
+      const { recordCouponUsage } = require('../../utils/coupon-helper');
+      await recordCouponUsage(appliedCoupon._id);
+    }
 
     await Table.findByIdAndUpdate(table._id, { status: 'Occupied' });
     emitOrderCreated(order);
@@ -203,12 +284,30 @@ router.get('/table/:tableCode/order', async (req, res, next) => {
       await tableSession.save();
       return res.status(401).json({ success: false, message: 'Customer session has expired.' });
     }
-    const order = await Order.findOne({ tableId: table._id, customerPhone: tableSession.customerPhone })
-      .populate('items.menuItem', 'name nameHi itemType thaliConfig imageUrl')
+    const orders = await Order.find({ tableId: table._id, customerPhone: tableSession.customerPhone })
+      .populate('items.menuItem', 'name nameHi itemType thaliConfig imageUrl preparationTime')
       .sort({ createdAt: -1 })
       .lean();
-    if (!order) return res.status(404).json({ success: false, message: 'No order found for this session.' });
-    res.json({ success: true, data: { order, session: { customerName: tableSession.customerName, customerPhone: tableSession.customerPhone, expiresAt: tableSession.expiresAt } } });
+    if (!orders.length) return res.status(404).json({ success: false, message: 'No order found for this session.' });
+
+    const runningBill = {
+      subTotal: toMoney(orders.reduce((sum, o) => sum + (o.subTotal || 0), 0)),
+      tax: toMoney(orders.reduce((sum, o) => sum + (o.tax || 0), 0)),
+      discount: toMoney(orders.reduce((sum, o) => sum + (o.discount || 0), 0)),
+      total: toMoney(orders.reduce((sum, o) => sum + (o.total || 0), 0)),
+      unpaidTotal: toMoney(orders.filter((o) => o.paymentStatus === 'Unpaid').reduce((sum, o) => sum + (o.total || 0), 0)),
+      totalItems: orders.reduce((sum, o) => sum + (o.items || []).reduce((iSum, it) => iSum + (it.quantity || 1), 0), 0)
+    };
+
+    res.json({
+      success: true,
+      data: {
+        orders,
+        latestOrder: orders[0],
+        runningBill,
+        session: { customerName: tableSession.customerName, customerPhone: tableSession.customerPhone, expiresAt: tableSession.expiresAt }
+      }
+    });
   } catch (error) {
     next(error);
   }
@@ -235,14 +334,54 @@ router.post('/table/:tableCode/payment-link', async (req, res, next) => {
     if (!table) return res.status(404).json({ success: false, message: 'Table QR not found' });
     const tableSession = await requireCustomerSession(table, String(req.get('x-table-session-token') || '').trim());
     if (!tableSession) return res.status(401).json({ success: false, message: 'A valid primary customer session is required.' });
-    const order = await Order.findOne({ tableId: table._id, customerPhone: tableSession.customerPhone, paymentStatus: 'Unpaid' }).sort({ createdAt: -1 });
-    if (!order || !['Served', 'Bill Requested'].includes(order.status)) return res.status(409).json({ success: false, message: 'Online payment is available after food is served.' });
-    const existing = await OnlinePayment.findOne({ orderId: order._id, status: 'Created', expiresAt: { $gt: new Date() } });
-    if (existing) return res.json({ success: true, data: { paymentId: existing._id, paymentUrl: existing.shortUrl, expiresAt: existing.expiresAt } });
+
+    const unpaidOrders = await Order.find({ tableId: table._id, customerPhone: tableSession.customerPhone, paymentStatus: 'Unpaid' }).sort({ createdAt: 1 });
+    if (!unpaidOrders.length) return res.status(404).json({ success: false, message: 'No unpaid orders found for this session.' });
+    if (!unpaidOrders.every((o) => ['Served', 'Bill Requested'].includes(o.status))) {
+      return res.status(409).json({ success: false, message: 'Online payment is available after food is served.' });
+    }
+
+    const totalAmount = toMoney(unpaidOrders.reduce((sum, o) => sum + o.total, 0));
+    const primaryOrder = unpaidOrders[0];
+    const orderIds = unpaidOrders.map((o) => o._id);
+
+    const existing = await OnlinePayment.findOne({
+      tableSessionId: tableSession._id,
+      status: 'Created',
+      expiresAt: { $gt: new Date() }
+    });
+    if (existing && Math.round(existing.amount * 100) === Math.round(totalAmount * 100)) {
+      return res.json({ success: true, data: { paymentId: existing._id, paymentUrl: existing.shortUrl, expiresAt: existing.expiresAt } });
+    }
+
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-    const gateway = await razorpayRequest('/payment_links', { method: 'POST', body: JSON.stringify({ amount: Math.round(order.total * 100), currency: 'INR', accept_partial: false, expire_by: Math.floor(expiresAt.getTime() / 1000), reference_id: String(order._id), description: `Bill for ${table.name || 'restaurant table'}`, customer: { name: tableSession.customerName, contact: `+91${tableSession.customerPhone}` }, notify: { sms: false, email: false }, reminder_enable: false, notes: { orderId: String(order._id), tableId: String(table._id) } }) });
-    const payment = await OnlinePayment.create({ orderId: order._id, tableSessionId: tableSession._id, providerLinkId: gateway.id, shortUrl: gateway.short_url, amount: order.total, expiresAt });
-    order.status = 'Bill Requested'; await order.save();
+    const gateway = await razorpayRequest('/payment_links', {
+      method: 'POST',
+      body: JSON.stringify({
+        amount: Math.round(totalAmount * 100),
+        currency: 'INR',
+        accept_partial: false,
+        expire_by: Math.floor(expiresAt.getTime() / 1000),
+        reference_id: String(primaryOrder._id),
+        description: `Bill for ${table.name || 'restaurant table'}`,
+        customer: { name: tableSession.customerName, contact: `+91${tableSession.customerPhone}` },
+        notify: { sms: false, email: false },
+        reminder_enable: false,
+        notes: { orderIds: orderIds.map(String).join(','), tableId: String(table._id) }
+      })
+    });
+
+    const payment = await OnlinePayment.create({
+      orderId: primaryOrder._id,
+      orderIds,
+      tableSessionId: tableSession._id,
+      providerLinkId: gateway.id,
+      shortUrl: gateway.short_url,
+      amount: totalAmount,
+      expiresAt
+    });
+
+    await Order.updateMany({ _id: { $in: orderIds } }, { $set: { status: 'Bill Requested' } });
     res.status(201).json({ success: true, data: { paymentId: payment._id, paymentUrl: payment.shortUrl, expiresAt } });
   } catch (error) { next(error); }
 });
@@ -259,23 +398,88 @@ router.get('/table/:tableCode/payment/:paymentId/status', async (req, res, next)
     if (payment.status !== 'Paid') {
       const gateway = await razorpayRequest(`/payment_links/${payment.providerLinkId}`);
       if (gateway.status === 'paid') {
+        const { recordPaidCustomerOrder } = require('../../services/customer-loyalty.service');
+        const targetOrderIds = (payment.orderIds && payment.orderIds.length) ? payment.orderIds : [payment.orderId];
+        const paymentMethod = gateway.payments?.[0]?.method === 'card' ? 'Card' : gateway.payments?.[0]?.method === 'wallet' ? 'Wallet' : 'UPI';
+        const transactionId = gateway.payments?.[0]?.payment_id || gateway.id;
+
         dbSession = await mongooseConnection.startSession();
         await dbSession.withTransaction(async () => {
-          const order = await Order.findOne({ _id: payment.orderId, paymentStatus: 'Unpaid' }).session(dbSession);
-          if (order) {
-            await Invoice.create([{ orderId: order._id, paymentMethod: gateway.payments?.[0]?.method === 'card' ? 'Card' : gateway.payments?.[0]?.method === 'wallet' ? 'Wallet' : 'UPI', transactionId: gateway.payments?.[0]?.payment_id || gateway.id, amount: order.total, status: 'Paid' }], { session: dbSession });
-            order.paymentStatus = 'Paid'; order.status = 'Paid'; await order.save({ session: dbSession });
+          const ordersToPay = await Order.find({ _id: { $in: targetOrderIds }, paymentStatus: 'Unpaid' }).session(dbSession);
+          for (const ord of ordersToPay) {
+            await Invoice.create([{
+              orderId: ord._id,
+              paymentMethod,
+              transactionId,
+              amount: ord.total,
+              status: 'Paid'
+            }], { session: dbSession });
+            ord.paymentStatus = 'Paid';
+            ord.status = 'Paid';
+            await ord.save({ session: dbSession });
+            await recordPaidCustomerOrder(ord, dbSession);
+          }
+          if (ordersToPay.length) {
             await Table.findByIdAndUpdate(table._id, { status: 'Cleaning' }, { session: dbSession });
             await TableSession.updateMany({ tableId: table._id, status: 'Active' }, { status: 'Closed', closedAt: new Date() }, { session: dbSession });
           }
-          payment.status = 'Paid'; payment.providerPaymentId = gateway.payments?.[0]?.payment_id || ''; payment.paidAt = new Date(); await payment.save({ session: dbSession });
+          payment.status = 'Paid';
+          payment.providerPaymentId = gateway.payments?.[0]?.payment_id || '';
+          payment.paidAt = new Date();
+          await payment.save({ session: dbSession });
         });
-      } else if (['cancelled', 'expired'].includes(gateway.status)) { payment.status = gateway.status === 'expired' ? 'Expired' : 'Cancelled'; await payment.save(); }
+      } else if (['cancelled', 'expired'].includes(gateway.status)) {
+        payment.status = gateway.status === 'expired' ? 'Expired' : 'Cancelled';
+        await payment.save();
+      }
     }
     res.json({ success: true, data: { status: payment.status, paidAt: payment.paidAt } });
   } catch (error) { next(error); } finally { if (dbSession) await dbSession.endSession(); }
 });
-module.exports = router;
+
+router.post('/table/:tableCode/feedback', async (req, res, next) => {
+  try {
+    const table = await findTableByToken(normalizeTableToken(req.params.tableCode));
+    if (!table) return res.status(404).json({ success: false, message: 'Table QR not found' });
+    const branch = await Branch.findById(table.branchId).lean();
+    if (!branch) return res.status(404).json({ success: false, message: 'Branch not found' });
+
+    const rating = Number(req.body.rating);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      return res.status(400).json({ success: false, message: 'Please provide an overall rating between 1 and 5' });
+    }
+
+    const Feedback = require('../../models/Feedback.model');
+    const feedback = await Feedback.create({
+      restaurantId: branch.restaurantId,
+      branchId: branch._id,
+      tableId: table._id,
+      customerName: String(req.body.customerName || 'Guest').trim(),
+      customerPhone: normalizePhone(req.body.customerPhone || ''),
+      rating,
+      foodRating: req.body.foodRating ? Math.min(5, Math.max(1, Number(req.body.foodRating))) : null,
+      serviceRating: req.body.serviceRating ? Math.min(5, Math.max(1, Number(req.body.serviceRating))) : null,
+      ambienceRating: req.body.ambienceRating ? Math.min(5, Math.max(1, Number(req.body.ambienceRating))) : null,
+      comments: String(req.body.comments || '').trim(),
+      dishRatings: Array.isArray(req.body.dishRatings) ? req.body.dishRatings : []
+    });
+
+    const isHighRating = rating >= 4;
+    const responseData = {
+      feedbackId: feedback._id,
+      isHighRating,
+      message: isHighRating
+        ? 'Thank you for your fantastic review! We are delighted you loved the food.'
+        : 'Thank you for your valuable feedback. We will work hard to make your next visit even better.'
+    };
+    if (isHighRating && branch.googleReviewUrl) {
+      responseData.googleReviewUrl = branch.googleReviewUrl;
+    }
+
+    res.status(201).json({ success: true, data: responseData });
+  } catch (error) { next(error); }
+});
+
 router.post('/table/:tableCode/request', async (req, res, next) => {
   try {
     const table = await findTableByToken(normalizeTableToken(req.params.tableCode));
@@ -289,17 +493,18 @@ router.post('/table/:tableCode/request', async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Customer session has expired.' });
     }
     const type = String(req.body.type || '').trim();
-    if (!['Waiter', 'Water', 'Bill', 'Refill'].includes(type)) return res.status(400).json({ success: false, message: 'Invalid service request type.' });
+    if (!['Waiter', 'Water', 'Bill', 'Refill', 'Cutlery', 'Cleaning', 'CustomNote'].includes(type)) return res.status(400).json({ success: false, message: 'Invalid service request type.' });
 
     let requestedPaymentMethod = '';
     let refillDetails = {};
     if (type === 'Bill') {
-      const order = await Order.findOne({ tableId: table._id, paymentStatus: 'Unpaid' }).sort({ createdAt: -1 });
-      if (!order || !['Served', 'Bill Requested'].includes(order.status)) return res.status(409).json({ success: false, message: 'Bill can be requested after food is served.' });
+      const orders = await Order.find({ tableId: table._id, paymentStatus: 'Unpaid' });
+      if (!orders.length || !orders.some((o) => ['Served', 'Bill Requested'].includes(o.status))) {
+        return res.status(409).json({ success: false, message: 'Bill can be requested after food is served.' });
+      }
       requestedPaymentMethod = String(req.body.paymentMethod || '').trim();
       if (requestedPaymentMethod && !['Cash', 'Card', 'UPI'].includes(requestedPaymentMethod)) return res.status(400).json({ success: false, message: 'Invalid payment method.' });
-      order.status = 'Bill Requested';
-      await order.save();
+      await Order.updateMany({ tableId: table._id, paymentStatus: 'Unpaid' }, { $set: { status: 'Bill Requested' } });
     }
 
     if (type === 'Refill') {
@@ -319,7 +524,7 @@ router.post('/table/:tableCode/request', async (req, res, next) => {
       refillDetails = { menuItemId: menuItem._id, dishName: dish.name, dishNameHi: dish.nameHi || '', refillPolicy: dish.refillPolicy, refillLimit: dish.refillPolicy === 'Limited' ? dish.refillLimit : null, refillNumber: used + 1 };
     }
 
-    const serviceRequest = await ServiceRequest.create({ branchId: table.branchId, tableId: table._id, tableSessionId: tableSession._id, type, customerName: tableSession.customerName, paymentMethod: requestedPaymentMethod || undefined, ...refillDetails });
+    const serviceNotes = String(req.body.notes || '').trim().slice(0, 300); const serviceRequest = await ServiceRequest.create({ branchId: table.branchId, tableId: table._id, tableSessionId: tableSession._id, type, notes: serviceNotes, customerName: tableSession.customerName, paymentMethod: requestedPaymentMethod || undefined, ...refillDetails });
     try {
       socketService.getIo().to(`branch_${table.branchId}`).emit('tableServiceRequested', { tableId: table._id, branchId: table.branchId, type, customerName: tableSession.customerName, paymentMethod: requestedPaymentMethod || null, ...refillDetails });
     } catch (_) {
@@ -330,3 +535,5 @@ router.post('/table/:tableCode/request', async (req, res, next) => {
     next(error);
   }
 });
+
+module.exports = router;

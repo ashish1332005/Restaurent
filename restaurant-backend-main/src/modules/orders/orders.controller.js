@@ -1,4 +1,4 @@
-﻿const mongoose = require('mongoose');
+const mongoose = require('mongoose');
 const Order = require('../../models/Order.model');
 const Table = require('../../models/Table.model');
 const MenuItem = require('../../models/MenuItem.model');
@@ -90,6 +90,49 @@ const startPreparingWithInventory = async (orderId, userId) => {
         await session.endSession();
     }
 };
+
+const restockInventoryForOrder = async (order, userId) => {
+    if (!order.inventoryConsumed) return;
+    const session = await mongoose.startSession();
+    try {
+        await session.withTransaction(async () => {
+            const itemQuantities = new Map();
+            for (const line of order.items) {
+                const id = String(line.menuItem);
+                itemQuantities.set(id, (itemQuantities.get(id) || 0) + Number(line.quantity || 0));
+            }
+            const menuItems = await MenuItem.find({ _id: { $in: [...itemQuantities.keys()] }, branchId: order.branchId }).select('recipe').session(session).lean();
+            for (const menuItem of menuItems) {
+                const servings = itemQuantities.get(String(menuItem._id)) || 0;
+                for (const recipeLine of menuItem.recipe || []) {
+                    const inventoryId = String(recipeLine.inventoryId);
+                    const restockAmount = Number(recipeLine.quantityPerServing) * servings;
+                    const record = await Inventory.findById(inventoryId).session(session);
+                    if (record) {
+                        record.quantity = Math.round((record.quantity + restockAmount) * 10000) / 10000;
+                        await record.save({ session });
+                        await InventoryMovement.create([{
+                            branchId: order.branchId,
+                            inventoryId: record._id,
+                            ingredientName: record.ingredientName,
+                            type: 'Correction',
+                            quantityDelta: restockAmount,
+                            balanceAfter: record.quantity,
+                            unit: record.unit,
+                            reason: `Order ${order._id} cancelled restock`,
+                            orderId: order._id,
+                            createdBy: userId
+                        }], { session });
+                    }
+                }
+            }
+            order.inventoryConsumed = false;
+            await order.save({ session });
+        });
+    } finally {
+        await session.endSession();
+    }
+};
 exports.createOrder = async (req, res, next) => {
     try {
         const roleName = req.user.role?.name;
@@ -135,10 +178,48 @@ exports.createOrder = async (req, res, next) => {
         if (manualDiscount > maxManualDiscount) return res.status(400).json({ success: false, message: 'Discount exceeds order total' });
         subTotal = Math.round(subTotal * 100) / 100;
         tax = Math.round(tax * 100) / 100;
-        const discount = Math.round((itemDiscount + manualDiscount) * 100) / 100;
-        const total = Math.round((subTotal + tax - discount) * 100) / 100;
+
+        let couponDiscount = 0;
+        let appliedCoupon = null;
+        const couponCode = req.body.couponCode ? String(req.body.couponCode).trim().toUpperCase() : null;
+        if (couponCode) {
+            const { validateAndCalculateCoupon, recordCouponUsage } = require('../../utils/coupon-helper');
+            const result = await validateAndCalculateCoupon({
+                couponCode,
+                restaurantId: req.user.restaurantId,
+                branchId,
+                subTotal
+            });
+            couponDiscount = result.discount;
+            appliedCoupon = result.coupon;
+        }
+
+        const discount = Math.round((itemDiscount + manualDiscount + couponDiscount) * 100) / 100;
+        const total = Math.max(0, Math.round((subTotal + tax - discount) * 100) / 100);
         const sourceByRole = { 'Restaurant Admin': 'Admin', Manager: 'Admin', Waiter: 'Waiter', Cashier: 'Cashier', 'Super Admin': 'Admin' };
-        const order = await Order.create({ branchId, tableId, userId: req.user.id, source: sourceByRole[roleName] || 'Waiter', customerName: String(req.body.customerName || '').trim().slice(0, 80), customerPhone: String(req.body.customerPhone || '').replace(/\D/g, '').slice(-10), orderType: tableId ? 'Dine-In' : 'Takeaway', items, subTotal, tax, discount, total, kitchenNotes: String(req.body.kitchenNotes || '').trim().slice(0, 500), paymentStatus: 'Unpaid', status: 'Pending' });
+        const order = await Order.create({
+            branchId,
+            tableId,
+            userId: req.user.id,
+            source: sourceByRole[roleName] || 'Waiter',
+            customerName: String(req.body.customerName || '').trim().slice(0, 80),
+            customerPhone: String(req.body.customerPhone || '').replace(/\D/g, '').slice(-10),
+            orderType: tableId ? 'Dine-In' : 'Takeaway',
+            items,
+            subTotal,
+            tax,
+            discount,
+            couponCode,
+            couponDiscount,
+            total,
+            kitchenNotes: String(req.body.kitchenNotes || '').trim().slice(0, 500),
+            paymentStatus: 'Unpaid',
+            status: 'Pending'
+        });
+        if (appliedCoupon) {
+            const { recordCouponUsage } = require('../../utils/coupon-helper');
+            await recordCouponUsage(appliedCoupon._id);
+        }
         if (order.tableId) await Table.findByIdAndUpdate(order.tableId, { status: 'Occupied' });
         const io = socketService.getIo();
         io.to(`branch_${order.branchId}`).emit('newOrder', order);
@@ -169,8 +250,29 @@ exports.updateOrderStatus = async (req, res, next) => {
             return res.status(403).json({ success: false, message: `Cannot change order from ${order.status} to ${nextStatus}` });
         }
         const paidMealCompleted = nextStatus === 'Served' && order.paymentStatus === 'Paid';
-        if (nextStatus === 'Preparing' && !order.inventoryConsumed) {
+        if (nextStatus === 'Cancelled') {
+            if (order.inventoryConsumed) {
+                await restockInventoryForOrder(order, req.user._id);
+            }
+            order.status = 'Cancelled';
+            await order.save();
+            if (order.tableId) {
+                const remainingActive = await Order.exists({
+                    tableId: order.tableId,
+                    _id: { $ne: order._id },
+                    status: { $nin: ['Paid', 'Cancelled'] }
+                });
+                if (!remainingActive) {
+                    await Table.findByIdAndUpdate(order.tableId, { status: 'Available' });
+                    await TableSession.updateMany({ tableId: order.tableId, status: 'Active' }, { status: 'Cancelled', closedAt: new Date() });
+                }
+            }
+        } else if ((nextStatus === 'Preparing' || nextStatus === 'Ready' || nextStatus === 'Served') && !order.inventoryConsumed) {
             order = await startPreparingWithInventory(order._id, req.user._id);
+            if (nextStatus !== 'Preparing') {
+                order.status = paidMealCompleted ? 'Paid' : nextStatus;
+                await order.save();
+            }
         } else {
             order.status = paidMealCompleted ? 'Paid' : nextStatus;
             await order.save();
@@ -181,6 +283,7 @@ exports.updateOrderStatus = async (req, res, next) => {
         }
         const io = socketService.getIo();
         io.to(`branch_${order.branchId}`).emit('orderUpdated', order);
+        if (order.tableId) io.to(`table_${order.tableId}`).emit('orderStatusChanged', { orderId: order._id, status: order.status, tableId: order.tableId });
         if (nextStatus === 'Ready') io.to(`branch_${order.branchId}`).emit('orderReady', { orderId: order._id, tableId: order.tableId, status: order.status });
         res.status(200).json({ success: true, data: order });
     } catch (error) {
@@ -234,9 +337,17 @@ exports.createBill = async (req, res, next) => {
             order.paymentStatus = 'Paid';
             if (mealComplete) order.status = 'Paid';
             await order.save({ session });
+            await recordPaidCustomerOrder(order, session);
             if (order.tableId && mealComplete) {
-                await Table.findByIdAndUpdate(order.tableId, { status: 'Cleaning' }, { session });
-                await TableSession.updateMany({ tableId: order.tableId, status: 'Active' }, { status: 'Closed', closedAt: new Date() }, { session });
+                const remainingUnpaid = await Order.exists({
+                    tableId: order.tableId,
+                    _id: { $ne: order._id },
+                    paymentStatus: 'Unpaid'
+                }).session(session);
+                if (!remainingUnpaid) {
+                    await Table.findByIdAndUpdate(order.tableId, { status: 'Cleaning' }, { session });
+                    await TableSession.updateMany({ tableId: order.tableId, status: 'Active' }, { status: 'Closed', closedAt: new Date() }, { session });
+                }
             }
         });
         const io = socketService.getIo();
@@ -248,6 +359,73 @@ exports.createBill = async (req, res, next) => {
     } finally {
         if (session) await session.endSession();
     }
+};
+
+exports.getKotReceipt = async (req, res, next) => {
+    try {
+        const order = await Order.findById(req.params.id)
+            .populate('tableId', 'name')
+            .populate('items.menuItem', 'name');
+        if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+        await assertBranchAccess(req.user, order.branchId);
+
+        const Branch = require('../../models/Branch.model');
+        const branch = await Branch.findById(order.branchId).lean();
+        const { generateKotReceipt } = require('../../utils/thermal-printer');
+        const width = req.query.width ? Number(req.query.width) : 80;
+        const receipt = generateKotReceipt(order, branch, { width });
+
+        res.status(200).json({ success: true, data: receipt });
+    } catch (error) { next(error); }
+};
+
+exports.getBillReceipt = async (req, res, next) => {
+    try {
+        const order = await Order.findById(req.params.id)
+            .populate('tableId', 'name')
+            .populate('items.menuItem', 'name');
+        if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+        await assertBranchAccess(req.user, order.branchId);
+
+        const Branch = require('../../models/Branch.model');
+        const Restaurant = require('../../models/Restaurant.model');
+        const branch = await Branch.findById(order.branchId).lean();
+        const restaurant = branch ? await Restaurant.findById(branch.restaurantId).lean() : null;
+        const invoice = await Invoice.findOne({ orderId: order._id }).lean();
+
+        const { generateBillReceipt } = require('../../utils/thermal-printer');
+        const width = req.query.width ? Number(req.query.width) : 80;
+        const receipt = generateBillReceipt(order, invoice, branch, restaurant, { width });
+
+        res.status(200).json({ success: true, data: receipt });
+    } catch (error) { next(error); }
+};
+
+exports.getWhatsAppBill = async (req, res, next) => {
+    try {
+        const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+        await assertBranchAccess(req.user, order.branchId);
+
+        const { generateWhatsAppInvoice } = require('../../services/notification.service');
+        const result = await generateWhatsAppInvoice(order._id);
+
+        res.status(200).json({ success: true, data: result });
+    } catch (error) { next(error); }
+};
+
+exports.getDailyDigest = async (req, res, next) => {
+    try {
+        const branchId = getRequestedBranchId(req);
+        if (!branchId) return res.status(400).json({ success: false, message: 'branchId is required' });
+        await assertBranchAccess(req.user, branchId);
+
+        const { generateDailyOwnerDigest } = require('../../services/notification.service');
+        const date = req.query.date ? new Date(req.query.date) : new Date();
+        const result = await generateDailyOwnerDigest(req.user.restaurantId, branchId, date);
+
+        res.status(200).json({ success: true, data: result });
+    } catch (error) { next(error); }
 };
 
 

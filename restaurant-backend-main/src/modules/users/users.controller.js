@@ -78,6 +78,15 @@ exports.updateUser = async (req, res, next) => {
         for (const field of ['name', 'phone', 'email', 'status']) {
             if (req.body[field] !== undefined) updates[field] = req.body[field];
         }
+        if (req.body.password !== undefined) {
+            const password = String(req.body.password || '');
+            if (password.length < 6 || password.length > 72) {
+                return res.status(400).json({ success: false, message: 'Password must be between 6 and 72 characters' });
+            }
+            const bcrypt = require('bcryptjs');
+            const salt = await bcrypt.genSalt(10);
+            updates.password = await bcrypt.hash(password, salt);
+        }
         if (req.body.branchId !== undefined) {
             const branch = await assertBranchAccess(req.user, req.body.branchId);
             updates.branchId = branch._id;

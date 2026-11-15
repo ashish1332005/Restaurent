@@ -675,6 +675,49 @@ class RestaurantApi {
     );
   }
 
+  static Future<Map<String, dynamic>> getCustomerLoyaltyInfo(
+    String code,
+    String phone,
+  ) async {
+    final response = await _client.get<Map<String, dynamic>>(
+      '/qr/table/$code/customer-info',
+      queryParameters: {'phone': phone},
+    );
+    return Map<String, dynamic>.from(
+      response.data?['data'] as Map? ?? const {},
+    );
+  }
+
+  static Future<Map<String, dynamic>> submitQrFeedback(
+    String code,
+    String sessionToken,
+    Map<String, dynamic> feedback,
+  ) async {
+    final response = await _client.post<Map<String, dynamic>>(
+      '/qr/table/$code/feedback',
+      data: feedback,
+      options: Options(headers: {'x-table-session-token': sessionToken}),
+    );
+    return Map<String, dynamic>.from(
+      response.data?['data'] as Map? ?? const {},
+    );
+  }
+
+  static Future<Map<String, dynamic>> sendWhatsAppBill(
+    String orderId, {
+    String? phone,
+  }) async {
+    final response = await _client.post<Map<String, dynamic>>(
+      '/orders/$orderId/whatsapp-bill',
+      data: {
+        if (phone != null && phone.isNotEmpty) 'phone': phone,
+      },
+    );
+    return Map<String, dynamic>.from(
+      response.data?['data'] as Map? ?? const {},
+    );
+  }
+
   static List<Map<String, dynamic>> _records(Map<String, dynamic>? payload) {
     final data = payload?['data'];
     if (data is! List) return const [];

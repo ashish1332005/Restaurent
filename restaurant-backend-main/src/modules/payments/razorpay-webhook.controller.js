@@ -32,22 +32,44 @@ exports.handleRazorpayWebhook = async (req, res, next) => {
     if (!payment || payment.status === 'Paid') return res.status(200).json({ success: true, duplicate: payment?.status === 'Paid' });
     if (Number(link.amount_paid) !== Math.round(payment.amount * 100)) return res.status(409).json({ success: false, message: 'Webhook payment amount mismatch' });
     session = await mongoose.startSession();
-    let paidOrder;
+    let paidOrders = [];
+    const { recordPaidCustomerOrder } = require('../../services/customer-loyalty.service');
     await session.withTransaction(async () => {
       const currentPayment = await OnlinePayment.findOne({ _id: payment._id, status: { $ne: 'Paid' } }).session(session);
       if (!currentPayment) return;
-      const order = await Order.findOne({ _id: currentPayment.orderId, paymentStatus: 'Unpaid' }).session(session);
-      if (!order) { currentPayment.status = 'Paid'; currentPayment.providerPaymentId = providerPayment?.id || ''; currentPayment.paidAt = new Date(); await currentPayment.save({ session }); return; }
-      await Invoice.create([{ orderId: order._id, paymentMethod: providerPayment?.method === 'card' ? 'Card' : providerPayment?.method === 'wallet' ? 'Wallet' : 'UPI', transactionId: providerPayment?.id || link.id, amount: order.total, status: 'Paid' }], { session });
-      order.paymentStatus = 'Paid'; order.status = 'Paid'; await order.save({ session });
-      if (order.tableId) {
-        await Table.findByIdAndUpdate(order.tableId, { status: 'Cleaning' }, { session });
-        await TableSession.updateMany({ tableId: order.tableId, status: 'Active' }, { status: 'Closed', closedAt: new Date() }, { session });
+      const targetOrderIds = (currentPayment.orderIds && currentPayment.orderIds.length) ? currentPayment.orderIds : [currentPayment.orderId];
+      const orders = await Order.find({ _id: { $in: targetOrderIds }, paymentStatus: 'Unpaid' }).session(session);
+      const paymentMethod = providerPayment?.method === 'card' ? 'Card' : providerPayment?.method === 'wallet' ? 'Wallet' : 'UPI';
+      const transactionId = providerPayment?.id || link.id;
+
+      for (const order of orders) {
+        await Invoice.create([{
+          orderId: order._id,
+          paymentMethod,
+          transactionId,
+          amount: order.total,
+          status: 'Paid'
+        }], { session });
+        order.paymentStatus = 'Paid';
+        order.status = 'Paid';
+        await order.save({ session });
+        await recordPaidCustomerOrder(order, session);
+        paidOrders.push(order);
       }
-      currentPayment.status = 'Paid'; currentPayment.providerPaymentId = providerPayment?.id || ''; currentPayment.paidAt = new Date(); await currentPayment.save({ session });
-      paidOrder = order;
+
+      if (paidOrders.length && paidOrders[0].tableId) {
+        await Table.findByIdAndUpdate(paidOrders[0].tableId, { status: 'Cleaning' }, { session });
+        await TableSession.updateMany({ tableId: paidOrders[0].tableId, status: 'Active' }, { status: 'Closed', closedAt: new Date() }, { session });
+      }
+
+      currentPayment.status = 'Paid';
+      currentPayment.providerPaymentId = providerPayment?.id || '';
+      currentPayment.paidAt = new Date();
+      await currentPayment.save({ session });
     });
-    if (paidOrder) { try { socketService.getIo().to(`branch_${paidOrder.branchId}`).emit('billPaid', { order: paidOrder }); } catch (_) {} }
+    for (const paidOrder of paidOrders) {
+      try { socketService.getIo().to(`branch_${paidOrder.branchId}`).emit('billPaid', { order: paidOrder }); } catch (_) {}
+    }
     return res.status(200).json({ success: true });
   } catch (error) {
     if (error?.code === 11000) return res.status(200).json({ success: true, duplicate: true });

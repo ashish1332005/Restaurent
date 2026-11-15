@@ -41,6 +41,25 @@ const validateCouponData = (data) => {
     return null;
 };
 
+exports.validateCoupon = async (req, res, next) => {
+    try {
+        const { validateAndCalculateCoupon } = require('../../utils/coupon-helper');
+        const { couponCode, restaurantId, branchId, subTotal } = req.body;
+        if (!restaurantId) return res.status(400).json({ success: false, message: 'restaurantId is required' });
+        const { discount, coupon } = await validateAndCalculateCoupon({ couponCode, restaurantId, branchId, subTotal });
+        res.status(200).json({
+            success: true,
+            data: {
+                couponCode: coupon.code,
+                discount,
+                discountType: coupon.discountType,
+                discountValue: coupon.discountValue,
+                description: coupon.description
+            }
+        });
+    } catch (error) { next(error); }
+};
+
 exports.getAvailableCoupons = async (req, res, next) => {
     try {
         if (!mongoose.isValidObjectId(req.query.restaurantId) || !mongoose.isValidObjectId(req.query.branchId)) return res.status(400).json({ success: false, message: 'restaurantId and branchId are required' });

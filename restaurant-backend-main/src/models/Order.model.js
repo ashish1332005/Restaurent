@@ -1,4 +1,4 @@
-﻿const mongoose = require('mongoose');
+const mongoose = require('mongoose');
 
 const orderItemSchema = new mongoose.Schema({
     menuItem: {
@@ -83,6 +83,26 @@ const orderSchema = new mongoose.Schema({
         min: 0
     },
     discount: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
+    couponCode: {
+        type: String,
+        default: null,
+        trim: true
+    },
+    couponDiscount: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
+    loyaltyDiscount: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
+    redeemedPoints: {
         type: Number,
         default: 0,
         min: 0
