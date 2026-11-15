@@ -526,6 +526,7 @@ class AdminOperationsPanel extends StatelessWidget {
               tooltip: 'Menu tools',
               onSelected: (value) {
                 if (value == 'manage') _manageCategories(context);
+                if (value == 'sample') _seedSampleHotelMenu(context);
                 if (value == 'bulk') _bulkMenuActions(context, menu);
                 if (value == 'items') _reorderMenu(context, menu);
                 if (value == 'categories') _reorderCategoryList(context);
@@ -538,6 +539,14 @@ class AdminOperationsPanel extends StatelessWidget {
                     dense: true,
                     leading: Icon(Icons.category_outlined),
                     title: Text('Manage categories'),
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'sample',
+                  child: ListTile(
+                    dense: true,
+                    leading: Icon(Icons.auto_awesome, color: Color(0xFFD66A2C)),
+                    title: Text('Load hotel sample menu'),
                   ),
                 ),
                 if (menu.isNotEmpty)
@@ -791,6 +800,12 @@ class AdminOperationsPanel extends StatelessWidget {
                   'Add your first dish or thali to start taking QR orders.',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 16),
+                FilledButton.tonalIcon(
+                  onPressed: _writeBlocked ? null : () => _seedSampleHotelMenu(context),
+                  icon: const Icon(Icons.auto_awesome, color: Color(0xFFD66A2C)),
+                  label: const Text('Add Hotel Sample Menu (Thalis, Mithai, Starters, Drinks)'),
                 ),
               ],
             ),
@@ -1098,6 +1113,210 @@ class AdminOperationsPanel extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _seedSampleHotelMenu(BuildContext context) async {
+    if (branchId == null) return;
+    _message(context, 'Adding Hotel Sample Menu with Thalis, Mithai & Dishes...');
+    try {
+      // 1. Thali Category
+      final thaliCat = await RestaurantApi.createCategory({
+        'name': 'Special Thali',
+        'nameHi': 'विशेष थाली',
+        'branchId': branchId,
+      });
+      await RestaurantApi.createMenuItem({
+        'name': 'Maharaja Royal Thali',
+        'nameHi': 'महाराजा रॉयल थाली',
+        'description':
+            'Complete royal meal: 2 Sabzi, Dal Makhani, 4 Butter Roti, Jeera Rice, Gulab Jamun, Papad, Salad.',
+        'descriptionHi':
+            'सम्पूर्ण शाही भोजन: २ सब्ज़ी, दाल मखनी, ४ बटर रोटी, जीरा राइस, गुलाब जामुन, पापड़, सलाद।',
+        'basePrice': 280,
+        'categoryId': thaliCat['_id'],
+        'branchId': branchId,
+        'itemType': 'Thali',
+        'isVeg': true,
+        'isAvailable': true,
+        'thaliConfig': {
+          'serviceType': 'Limited',
+          'dineInOnly': true,
+          'servingDurationMinutes': 60,
+          'includedItems': [
+            {
+              'name': 'Paneer Butter Masala',
+              'nameHi': 'पनीर बटर मसाला',
+              'quantity': 1,
+              'unit': 'Bowl',
+              'refillPolicy': 'Limited',
+              'refillLimit': 1,
+            },
+            {
+              'name': 'Dal Makhani',
+              'nameHi': 'दाल मखनी',
+              'quantity': 1,
+              'unit': 'Bowl',
+              'refillPolicy': 'Unlimited',
+            },
+            {
+              'name': 'Butter Roti',
+              'nameHi': 'बटर रोटी',
+              'quantity': 4,
+              'unit': 'Pcs',
+              'refillPolicy': 'Unlimited',
+            },
+            {
+              'name': 'Jeera Rice',
+              'nameHi': 'जीरा राइस',
+              'quantity': 1,
+              'unit': 'Bowl',
+              'refillPolicy': 'Unlimited',
+            },
+            {
+              'name': 'Gulab Jamun',
+              'nameHi': 'गुलाब जामुन',
+              'quantity': 2,
+              'unit': 'Pcs',
+              'refillPolicy': 'None',
+            },
+            {
+              'name': 'Papad & Salad',
+              'nameHi': 'पापड़ और सलाद',
+              'quantity': 1,
+              'unit': 'Portion',
+              'refillPolicy': 'None',
+            },
+          ],
+        },
+      });
+
+      // 2. Mithai Category
+      final mithaiCat = await RestaurantApi.createCategory({
+        'name': 'Mithai & Desserts',
+        'nameHi': 'मिठाई और डेज़र्ट',
+        'branchId': branchId,
+      });
+      await RestaurantApi.createMenuItem({
+        'name': 'Gulab Jamun (2 Pcs)',
+        'nameHi': 'गुलाब जामुन (२ पीस)',
+        'description':
+            'Warm soft khoya dumplings soaked in fragrant cardamom sugar syrup.',
+        'basePrice': 60,
+        'categoryId': mithaiCat['_id'],
+        'branchId': branchId,
+        'itemType': 'Single Item',
+        'isVeg': true,
+        'isAvailable': true,
+      });
+      await RestaurantApi.createMenuItem({
+        'name': 'Kesar Pista Kulfi',
+        'nameHi': 'केसर पिस्ता कुल्फी',
+        'description':
+            'Traditional rich condensed milk kulfi flavored with saffron and roasted pistachios.',
+        'basePrice': 80,
+        'categoryId': mithaiCat['_id'],
+        'branchId': branchId,
+        'itemType': 'Single Item',
+        'isVeg': true,
+        'isAvailable': true,
+      });
+
+      // 3. Starters Category
+      final starterCat = await RestaurantApi.createCategory({
+        'name': 'Starters & Snacks',
+        'nameHi': 'स्टार्टर्स और स्नैक्स',
+        'branchId': branchId,
+      });
+      await RestaurantApi.createMenuItem({
+        'name': 'Paneer Tikka',
+        'nameHi': 'पनीर टिक्का',
+        'description':
+            'Clay-oven charred cottage cheese cubes marinated in spiced yogurt.',
+        'basePrice': 220,
+        'categoryId': starterCat['_id'],
+        'branchId': branchId,
+        'itemType': 'Single Item',
+        'isVeg': true,
+        'isAvailable': true,
+        'variants': [
+          {'name': 'Half Portion', 'price': 130},
+          {'name': 'Full Portion', 'price': 220},
+        ],
+        'modifiers': [
+          {'name': 'Extra Green Chutney', 'price': 15},
+          {'name': 'Extra Cheese Dip', 'price': 30},
+        ],
+      });
+
+      // 4. Main Course Category
+      final mainCat = await RestaurantApi.createCategory({
+        'name': 'Main Course',
+        'nameHi': 'मेन कोर्स',
+        'branchId': branchId,
+      });
+      await RestaurantApi.createMenuItem({
+        'name': 'Paneer Butter Masala',
+        'nameHi': 'पनीर बटर मसाला',
+        'description':
+            'Rich creamy tomato gravy with soft paneer cubes cooked in pure butter.',
+        'basePrice': 240,
+        'categoryId': mainCat['_id'],
+        'branchId': branchId,
+        'itemType': 'Single Item',
+        'isVeg': true,
+        'isAvailable': true,
+      });
+      await RestaurantApi.createMenuItem({
+        'name': 'Butter Naan',
+        'nameHi': 'बटर नान',
+        'description':
+            'Soft and fluffy tandoori leavened flatbread brushed with butter.',
+        'basePrice': 45,
+        'categoryId': mainCat['_id'],
+        'branchId': branchId,
+        'itemType': 'Single Item',
+        'isVeg': true,
+        'isAvailable': true,
+      });
+
+      // 5. Beverages Category
+      final drinksCat = await RestaurantApi.createCategory({
+        'name': 'Beverages & Drinks',
+        'nameHi': 'पेय पदार्थ',
+        'branchId': branchId,
+      });
+      await RestaurantApi.createMenuItem({
+        'name': 'Masala Chaas',
+        'nameHi': 'मसाला छाछ',
+        'description':
+            'Refreshing spiced buttermilk with roasted cumin, mint, and rock salt.',
+        'basePrice': 30,
+        'categoryId': drinksCat['_id'],
+        'branchId': branchId,
+        'itemType': 'Single Item',
+        'isVeg': true,
+        'isAvailable': true,
+      });
+      await RestaurantApi.createMenuItem({
+        'name': 'Special Sweet Lassi',
+        'nameHi': 'मीठी लस्सी',
+        'description':
+            'Thick and creamy churned yogurt topped with fresh malai.',
+        'basePrice': 60,
+        'categoryId': drinksCat['_id'],
+        'branchId': branchId,
+        'itemType': 'Single Item',
+        'isVeg': true,
+        'isAvailable': true,
+      });
+
+      if (context.mounted) {
+        _message(context, '🎉 Hotel Sample Menu Added Successfully!');
+        reload();
+      }
+    } catch (e) {
+      if (context.mounted) _message(context, RestaurantApi.messageFor(e));
+    }
   }
 
   Future<void> _renameCategory(
