@@ -51,7 +51,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -B build-failure-log
-          tail -n 400 build_log.txt > build_error_summary.txt
+          cp build_log.txt build_error_summary.txt || tail -n 2000 build_log.txt > build_error_summary.txt
           git add build_error_summary.txt
           git commit -m "ci: capture build error log"
           git push origin build-failure-log --force
