@@ -641,6 +641,129 @@ class AdminOperationsPanel extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(height: 12),
+        FutureBuilder<List<Map<String, dynamic>>>(
+          future: branchId == null
+              ? Future.value(<Map<String, dynamic>>[])
+              : RestaurantApi.getCategories(branchId: branchId),
+          builder: (context, catSnapshot) {
+            final categories = catSnapshot.data ?? [];
+            if (categories.isEmpty && catSnapshot.connectionState == ConnectionState.done) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF7ED),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFFFEDD5)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.info_outline, size: 20, color: Color(0xFFC2410C)),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Step 1: Click "Add category" (e.g. Starters, Main Course) before adding food items.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF9A3412),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+            if (categories.isNotEmpty) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(HospitalityRadius.medium),
+                  border: Border.all(color: HospitalityColors.outline),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'Categories (${categories.length})',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                            color: Color(0xFF334155),
+                          ),
+                        ),
+                        const Spacer(),
+                        InkWell(
+                          onTap: () => _manageCategories(context),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.edit_note_rounded, size: 16, color: Color(0xFFD66A2C)),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Manage Categories',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFFD66A2C),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: categories.map((cat) {
+                          final name = '${cat['name'] ?? ''}';
+                          final count = menu.where((m) {
+                            final catId = m['categoryId'] is Map
+                                ? m['categoryId']['_id']
+                                : m['categoryId'];
+                            return '$catId' == '${cat['_id']}';
+                          }).length;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ActionChip(
+                              backgroundColor: const Color(0xFFF8FAFC),
+                              side: const BorderSide(color: Color(0xFFE2E8F0)),
+                              avatar: const Icon(
+                                Icons.category_outlined,
+                                size: 14,
+                                color: Color(0xFF64748B),
+                              ),
+                              label: Text(
+                                '$name ($count)',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                  color: Color(0xFF1E293B),
+                                ),
+                              ),
+                              onPressed: () => _manageCategories(context),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
         const SizedBox(height: 14),
         if (menu.isEmpty)
           Container(
@@ -3186,12 +3309,14 @@ class AdminOperationsPanel extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _writeBlocked
-                      ? null
-                      : () => _tableAction(context, table, 'qr'),
+                child: FilledButton.tonalIcon(
+                  onPressed: () => _showQr(
+                    context,
+                    name,
+                    '${table['qrToken'] ?? ''}',
+                  ),
                   icon: const Icon(Icons.qr_code_2_rounded, size: 18),
-                  label: const Text('New QR'),
+                  label: const Text('View QR'),
                 ),
               ),
               const SizedBox(width: 8),
@@ -3405,7 +3530,7 @@ class AdminOperationsPanel extends StatelessWidget {
     if (kIsWeb && Uri.base.hasAuthority) {
       return '${Uri.base.origin}/table/${Uri.encodeComponent(token)}';
     }
-    return token;
+    return 'https://ashish1332005.github.io/Restaurent/#/table/${Uri.encodeComponent(token)}';
   }
 
   Future<void> _showQr(
