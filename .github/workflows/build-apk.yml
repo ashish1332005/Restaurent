@@ -40,19 +40,30 @@ jobs:
         working-directory: restaurant-app-main
         run: |
           set -o pipefail
-          flutter analyze --no-fatal-infos > ../analyze_log.txt 2>&1 || true
+          flutter analyze --no-fatal-infos 2>&1 | tee ../analyze_log.txt || true
           flutter build apk --release --android-skip-build-dependency-validation --dart-define=API_BASE_URL=https://restaurent-2-xq6f.onrender.com/api/v1 2>&1 | tee ../build_log.txt
 
       - name: Capture Failure Log
         if: failure()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -B build-failure-log
-          { echo "=== ANALYZE LOG ==="; tail -n 80 ../analyze_log.txt 2>/dev/null; echo "=== BUILD LOG ==="; tail -n 120 ../build_log.txt 2>/dev/null; } > build_error_summary.txt
+          { echo "=== ANALYZE LOG ==="; tail -n 100 analyze_log.txt 2>/dev/null; echo "=== BUILD LOG ==="; tail -n 150 build_log.txt 2>/dev/null; } > build_error_summary.txt
           git add build_error_summary.txt
-          git commit -m "ci: capture build error log"
-          git push origin build-failure-log --force
+          git commit -m "ci: capture build error log" || true
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" build-failure-log --force || true
+
+      - name: Upload Failure Logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-failure-logs
+          path: |
+            analyze_log.txt
+            build_log.txt
 
       - name: Rename APK for Easy Download
         run: |
