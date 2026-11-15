@@ -38,7 +38,9 @@ jobs:
 
       - name: Build Android APK
         working-directory: restaurant-app-main
-        run: flutter build apk --release --android-skip-build-dependency-validation --dart-define=API_BASE_URL=https://restaurent-2-xq6f.onrender.com/api/v1
+        run: |
+          flutter analyze --no-fatal-infos > ../analyze_log.txt 2>&1 || true
+          flutter build apk --release --android-skip-build-dependency-validation --dart-define=API_BASE_URL=https://restaurent-2-xq6f.onrender.com/api/v1 2>&1 | tee ../build_log.txt
 
       - name: Capture Failure Log
         if: failure()
@@ -46,7 +48,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -B build-failure-log
-          (cat analyze_log.txt 2>/dev/null || cat build_log.txt 2>/dev/null || echo "no log") > build_error_summary.txt
+          { tail -n 80 analyze_log.txt 2>/dev/null; tail -n 120 build_log.txt 2>/dev/null; } > build_error_summary.txt
           git add build_error_summary.txt
           git commit -m "ci: capture build error log"
           git push origin build-failure-log --force

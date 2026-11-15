@@ -320,7 +320,7 @@ class _AdminStaffPanelState extends State<AdminStaffPanel> {
                     ),
                   ],
                   const SizedBox(height: 12),
-                  HeadlessSelectField<String>(
+                  HeadlessSelectField<String?>(
                     label: 'Role / Designation',
                     prefixIcon: Icons.badge_outlined,
                     value: roleId,
@@ -373,7 +373,7 @@ class _AdminStaffPanelState extends State<AdminStaffPanel> {
                           iconColor: Color(0xFFDC2626),
                         ),
                       ],
-                      onChanged: (v) => setDialog(() => status = v),
+                      onChanged: (v) => setDialog(() => status = v ?? 'Active'),
                     ),
                   ],
                 ],

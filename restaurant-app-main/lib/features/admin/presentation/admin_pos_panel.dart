@@ -910,7 +910,7 @@ class _AdminPosPanelState extends State<AdminPosPanel> {
                     iconColor: Color(0xFF0F172A),
                   ),
                 ],
-                onChanged: (value) => setDialog(() => method = value),
+                onChanged: (value) => setDialog(() => method = value ?? 'Cash'),
               ),
               if (method == 'Split')
                 TextField(

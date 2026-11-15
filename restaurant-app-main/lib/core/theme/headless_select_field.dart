@@ -25,8 +25,8 @@ class HeadlessSelectField<T> extends StatelessWidget {
   final String label;
   final String? hint;
   final T? value;
-  final List<HeadlessSelectItem<T>> items;
-  final ValueChanged<T> onChanged;
+  final List<HeadlessSelectItem<dynamic>> items;
+  final ValueChanged<T?> onChanged;
   final IconData? prefixIcon;
   final bool isRequired;
 
@@ -41,7 +41,7 @@ class HeadlessSelectField<T> extends StatelessWidget {
     this.isRequired = false,
   });
 
-  HeadlessSelectItem<T>? get _selectedItem {
+  HeadlessSelectItem<dynamic>? get _selectedItem {
     try {
       return items.firstWhere((item) => item.value == value);
     } catch (_) {
@@ -226,9 +226,9 @@ class HeadlessSelectField<T> extends StatelessWidget {
 
 class _PickerContent<T> extends StatefulWidget {
   final String title;
-  final List<HeadlessSelectItem<T>> items;
+  final List<HeadlessSelectItem<dynamic>> items;
   final T? selectedValue;
-  final ValueChanged<T> onSelected;
+  final ValueChanged<T?> onSelected;
   final ScrollController? scrollController;
 
   const _PickerContent({
@@ -336,7 +336,7 @@ class _PickerContentState<T> extends State<_PickerContent<T>> {
                 child: InkWell(
                   onTap: () {
                     HapticFeedback.selectionClick();
-                    widget.onSelected(item.value);
+                    widget.onSelected(item.value as T?);
                   },
                   borderRadius: BorderRadius.circular(14),
                   child: Padding(

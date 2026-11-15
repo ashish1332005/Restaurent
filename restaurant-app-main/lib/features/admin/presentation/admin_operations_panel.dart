@@ -2246,8 +2246,8 @@ class AdminOperationsPanel extends StatelessWidget {
                                 .toList(),
                             onChanged: (value) {
                               setDialogState(() {
-                                itemType = value;
-                                isThali = value == 'Thali';
+                                itemType = value ?? 'Dish';
+                                isThali = itemType == 'Thali';
                               });
                             },
                           ),
@@ -2277,7 +2277,7 @@ class AdminOperationsPanel extends StatelessWidget {
                                     )
                                     .toList(),
                                 onChanged: (value) {
-                                  setDialogState(() => spiceLevel = value);
+                                  setDialogState(() => spiceLevel = value ?? 'Medium');
                                 },
                               ),
                               const SizedBox(height: 12),
@@ -2712,7 +2712,7 @@ class AdminOperationsPanel extends StatelessWidget {
                                 .toList(),
                             onChanged: (value) {
                               setDialogState(() {
-                                publishStatus = value;
+                                publishStatus = value ?? 'Published';
                                 if (value != 'Scheduled') publishAt = null;
                               });
                             },
@@ -3238,7 +3238,7 @@ class AdminOperationsPanel extends StatelessWidget {
                         iconColor: Color(0xFFF59E0B),
                       ),
                     ],
-                    onChanged: (val) => setDishState(() => refillPolicy = val),
+                    onChanged: (val) => setDishState(() => refillPolicy = val ?? 'None'),
                   ),
                   if (refillPolicy == 'Limited')
                     TextField(
@@ -3728,7 +3728,7 @@ class AdminOperationsPanel extends StatelessWidget {
                     ),
                   ],
                   onChanged: (value) {
-                    setDialogState(() => shape = value);
+                    setDialogState(() => shape = value ?? 'Rectangle');
                   },
                 ),
               ],
