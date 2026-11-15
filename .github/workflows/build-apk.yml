@@ -38,7 +38,8 @@ jobs:
 
       - name: Build Android APK
         working-directory: restaurant-app-main
-        run: flutter build apk --release
+        run: |
+          flutter build apk --release --verbose > build_log.txt 2>&1 || (echo "=== BUILD ERROR TAIL ===" && tail -n 150 build_log.txt && exit 1)
 
       - name: Rename APK for Easy Download
         run: |
