@@ -36,11 +36,14 @@ jobs:
         working-directory: restaurant-app-main
         run: flutter pub get
 
+      - name: Analyze Flutter Code
+        working-directory: restaurant-app-main
+        run: flutter analyze --no-fatal-infos
+
       - name: Build Android APK
         working-directory: restaurant-app-main
         run: |
-          flutter build apk --release --android-skip-build-dependency-validation --verbose > ../build_log.txt 2>&1 || (
-            echo "::error::Flutter APK compilation failed. Printing tail of log:"
+          flutter build apk --release --android-skip-build-dependency-validation > ../build_log.txt 2>&1 || (
             tail -n 120 ../build_log.txt
             exit 1
           )
@@ -51,7 +54,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -B build-failure-log
-          cp ../build_log.txt build_error_summary.txt || tail -n 2000 ../build_log.txt > build_error_summary.txt
+          tail -n 500 build_log.txt > build_error_summary.txt || echo "no log" > build_error_summary.txt
           git add build_error_summary.txt
           git commit -m "ci: capture build error log"
           git push origin build-failure-log --force
