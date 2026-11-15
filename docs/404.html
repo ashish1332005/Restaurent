@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Opening Restaurant Menu...</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background: #FDFBF7;
+      color: #1E293B;
+      text-align: center;
+      padding: 20px;
+    }
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 4px solid #FED7AA;
+      border-top-color: #EA580C;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .btn {
+      display: inline-block;
+      margin-top: 15px;
+      padding: 12px 24px;
+      background: #EA580C;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 12px;
+      font-weight: bold;
+    }
+  </style>
+  <script>
+    (function() {
+      var hash = window.location.hash || '';
+      var path = window.location.pathname || '';
+      var token = '';
+
+      var matchHash = hash.match(/table\/([^\/?#]+)/);
+      if (matchHash && matchHash[1]) {
+        token = matchHash[1];
+      } else {
+        var matchPath = path.match(/table\/([^\/?#]+)/);
+        if (matchPath && matchPath[1]) {
+          token = matchPath[1];
+        }
+      }
+
+      var target = 'https://restaurent-2-xq6f.onrender.com/' + (token ? 'table/' + encodeURIComponent(token) : '');
+      window.location.replace(target);
+    })();
+  </script>
+</head>
+<body>
+  <div class="spinner"></div>
+  <h2 style="margin-bottom: 8px;">Opening Restaurant Menu...</h2>
+  <p style="color: #64748B; font-size: 14px;">Redirecting you to the live digital dining table.</p>
+  <a id="manualLink" class="btn" href="https://restaurent-2-xq6f.onrender.com/">Click here if not redirected automatically</a>
+  <script>
+    var hash = window.location.hash || '';
+    var matchHash = hash.match(/table\/([^\/?#]+)/);
+    if (matchHash && matchHash[1]) {
+      document.getElementById('manualLink').href = 'https://restaurent-2-xq6f.onrender.com/table/' + encodeURIComponent(matchHash[1]);
+    }
+  </script>
+</body>
+</html>
