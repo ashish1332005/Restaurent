@@ -7,6 +7,9 @@ on:
       - master
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-apk:
     name: Build Flutter Android APK
@@ -37,9 +40,34 @@ jobs:
         working-directory: restaurant-app-main
         run: flutter build apk --release
 
+      - name: Rename APK for Easy Download
+        run: |
+          cp restaurant-app-main/build/app/outputs/flutter-apk/app-release.apk ./restaurant-app.apk
+
       - name: Upload Release APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: restaurant-app-release
-          path: restaurant-app-main/build/app/outputs/flutter-apk/app-release.apk
+          path: ./restaurant-app.apk
           if-no-files-found: error
+
+      - name: Publish Public GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/master')
+        with:
+          tag_name: v1.0.0
+          name: "Restaurant OS v1.0.0 (Release APK)"
+          body: |
+            ### 📱 Restaurant Mobile Application (Android)
+            
+            Sabhi users direct niche diye gaye APK link par tap karke download aur install kar sakte hain:
+            - **Download APK:** [`restaurant-app.apk`](https://github.com/ashish1332005/Restaurent/releases/download/v1.0.0/restaurant-app.apk)
+            
+            #### Features Included:
+            - 🍽️ Customer Table QR Ordering & Live Menu
+            - 🔥 Bestsellers & Chef Specials Highlights
+            - 🪙 Loyalty Coins & Tier Perks
+            - ⏱️ Live Kitchen Order Status Stepper
+            - 📱 1-Tap WhatsApp GST Bill Dispatch
+            - ⭐ 5-Star Delight Feedback & Google Review Booster
+          files: ./restaurant-app.apk
