@@ -364,14 +364,14 @@ class _PaymentGatewayModalState extends State<PaymentGatewayModal> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 16, color: active ? Colors.white : Colors.black84),
+              Icon(icon, size: 16, color: active ? Colors.white : Colors.black87),
               const SizedBox(width: 6),
               Text(
                 label,
                 style: GoogleFonts.dmSans(
                   fontSize: 13,
                   fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                  color: active ? Colors.white : Colors.black84,
+                  color: active ? Colors.white : Colors.black87,
                 ),
               ),
             ],
@@ -407,7 +407,7 @@ class _PaymentGatewayModalState extends State<PaymentGatewayModal> {
                 style: GoogleFonts.dmSans(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black84,
+                  color: Colors.black87,
                 ),
               ),
               const SizedBox(height: 2),
@@ -569,7 +569,7 @@ class _PaymentGatewayModalState extends State<PaymentGatewayModal> {
                 bank,
                 style: GoogleFonts.dmSans(
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? ink : Colors.black84,
+                  color: isSelected ? ink : Colors.black87,
                 ),
               ),
               trailing: isSelected
