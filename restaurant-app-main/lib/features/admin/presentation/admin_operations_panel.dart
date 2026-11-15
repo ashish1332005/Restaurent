@@ -73,7 +73,7 @@ class AdminOperationsPanel extends StatelessWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             ),
-            onPressed: () => context.push('/subscription'),
+            onPressed: () => context!.push('/subscription'),
             icon: const Icon(Icons.bolt, size: 16),
             label: const Text('Upgrade / Pay Online', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
           ),

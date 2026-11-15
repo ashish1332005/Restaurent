@@ -739,7 +739,7 @@ class _CheckoutModalSheetState extends State<CheckoutModalSheet> {
                         if (paid == true) {
                           _celebrateKey.currentState?.blast();
                           await Future.delayed(const Duration(milliseconds: 300));
-                          if (context.mounted) Navigator.pop(context);
+                          if (mounted) Navigator.pop(context);
                         }
                         return;
                       }

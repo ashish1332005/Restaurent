@@ -38,7 +38,11 @@ jobs:
 
       - name: Analyze Flutter Code
         working-directory: restaurant-app-main
-        run: flutter analyze --no-fatal-infos
+        run: |
+          flutter analyze > ../analyze_log.txt 2>&1 || (
+            cat ../analyze_log.txt
+            exit 1
+          )
 
       - name: Build Android APK
         working-directory: restaurant-app-main
@@ -54,7 +58,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -B build-failure-log
-          tail -n 500 build_log.txt > build_error_summary.txt || echo "no log" > build_error_summary.txt
+          (cat analyze_log.txt 2>/dev/null || cat build_log.txt 2>/dev/null || echo "no log") > build_error_summary.txt
           git add build_error_summary.txt
           git commit -m "ci: capture build error log"
           git push origin build-failure-log --force
