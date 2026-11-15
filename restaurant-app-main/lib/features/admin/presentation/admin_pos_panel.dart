@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/network/restaurant_api.dart';
 import '../../../core/theme/hospitality_theme.dart';
@@ -27,6 +28,9 @@ class _AdminPosPanelState extends State<AdminPosPanel> {
   final customerPhone = TextEditingController();
   String? tableId;
   bool busy = false;
+  String selectedCategory = 'all';
+  bool vegOnly = false;
+
   @override
   void dispose() {
     search.dispose();
@@ -34,6 +38,26 @@ class _AdminPosPanelState extends State<AdminPosPanel> {
     customerName.dispose();
     customerPhone.dispose();
     super.dispose();
+  }
+
+  void _quickAdd(Map<String, dynamic> item) {
+    HapticFeedback.lightImpact();
+    final key = '${item['_id']}::';
+    final existing = cart[key];
+    final price = (item['basePrice'] as num? ?? 0).toDouble();
+    if (existing != null) {
+      setState(() => existing.quantity += 1);
+    } else {
+      setState(() {
+        cart[key] = _PosLine(
+          item: item,
+          variant: '',
+          addOns: const [],
+          quantity: 1,
+          unitPrice: price,
+        );
+      });
+    }
   }
 
   double get subtotal =>
@@ -79,13 +103,161 @@ class _AdminPosPanelState extends State<AdminPosPanel> {
               SizedBox(width: 390, child: checkout),
             ],
           )
-        : Column(children: [menu, const SizedBox(height: 16), checkout]);
+        : Stack(
+            children: [
+              Padding(
+                padding: EdgeInsets.only(bottom: cart.isNotEmpty ? 88 : 0),
+                child: Column(
+                  children: [
+                    menu,
+                    const SizedBox(height: 16),
+                    checkout,
+                  ],
+                ),
+              ),
+              if (cart.isNotEmpty)
+                Positioned(
+                  left: 12,
+                  right: 12,
+                  bottom: 12,
+                  child: _floatingCartBar(context, checkout),
+                ),
+            ],
+          );
+  }
+
+  void _openMobileCheckout(BuildContext context, Widget checkoutWidget) {
+    HapticFeedback.selectionClick();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: HospitalityColors.canvas,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.black26,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(16),
+                  child: checkoutWidget,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _floatingCartBar(BuildContext context, Widget checkoutWidget) {
+    final count = cart.values.fold(0, (sum, line) => sum + line.quantity);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _openMobileCheckout(context, checkoutWidget),
+        borderRadius: BorderRadius.circular(20),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: const Color(0xFF0F172A),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.35),
+                blurRadius: 20,
+                offset: const Offset(0, 6),
+              ),
+            ],
+            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: HospitalityColors.saffron,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$count',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Rs ${total.toStringAsFixed(0)}',
+                      style: const TextStyle(
+                        color: Color(0xFFFCD34D),
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      tableId != null ? 'Table selected' : 'Tap to select table & punch KOT',
+                      style: const TextStyle(color: Colors.white70, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: HospitalityColors.saffron,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                ),
+                onPressed: () => _openMobileCheckout(context, checkoutWidget),
+                icon: const Icon(Icons.receipt_long_rounded, size: 18),
+                label: const Text('Review', style: TextStyle(fontWeight: FontWeight.w800)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _menu() {
     final query = search.text.trim().toLowerCase();
+    final categories = <String>{};
+    for (final item in widget.menu) {
+      if (item['categoryId'] is Map && item['categoryId']['name'] != null) {
+        categories.add(item['categoryId']['name'].toString());
+      }
+    }
     final availableItems = widget.menu.where((item) {
       if (item['isAvailable'] == false) return false;
+      if (vegOnly && item['isVeg'] == false) return false;
+      if (selectedCategory != 'all') {
+        final catName = item['categoryId'] is Map ? item['categoryId']['name']?.toString() : null;
+        if (catName != selectedCategory) return false;
+      }
       if (query.isEmpty) return true;
       return [
         item['name'],
@@ -141,7 +313,40 @@ class _AdminPosPanelState extends State<AdminPosPanel> {
               isDense: true,
             ),
           ),
-          const SizedBox(height: 13),
+          const SizedBox(height: 10),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                FilterChip(
+                  label: const Text('All Dishes'),
+                  selected: selectedCategory == 'all',
+                  selectedColor: HospitalityColors.softSaffron,
+                  checkmarkColor: HospitalityColors.saffronDark,
+                  onSelected: (_) => setState(() => selectedCategory = 'all'),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  avatar: const Icon(Icons.eco_rounded, color: Color(0xFF16A34A), size: 16),
+                  label: const Text('Pure Veg'),
+                  selected: vegOnly,
+                  selectedColor: const Color(0xFFDCFCE7),
+                  onSelected: (val) => setState(() => vegOnly = val),
+                ),
+                for (final cat in categories) ...[
+                  const SizedBox(width: 8),
+                  FilterChip(
+                    label: Text(cat),
+                    selected: selectedCategory == cat,
+                    selectedColor: HospitalityColors.softSaffron,
+                    checkmarkColor: HospitalityColors.saffronDark,
+                    onSelected: (_) => setState(() => selectedCategory = cat),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
           if (availableItems.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 34),
@@ -183,12 +388,32 @@ class _AdminPosPanelState extends State<AdminPosPanel> {
     final category = item['categoryId'] is Map
         ? (item['categoryId']['name'] ?? 'Menu').toString()
         : 'Menu';
+    final inCart = cart.entries
+        .where((e) => '${e.value.item['_id']}' == '${item['_id']}')
+        .fold(0, (sum, e) => sum + e.value.quantity);
+
     return Material(
-      color: HospitalityColors.canvas,
-      borderRadius: BorderRadius.circular(HospitalityRadius.small),
+      color: inCart > 0
+          ? HospitalityColors.softSaffron.withValues(alpha: 0.35)
+          : HospitalityColors.canvas,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(HospitalityRadius.small),
+        side: BorderSide(
+          color: inCart > 0 ? HospitalityColors.saffron : HospitalityColors.outline,
+          width: inCart > 0 ? 1.5 : 1,
+        ),
+      ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => _configure(item),
+        onTap: () {
+          final hasVariants = (item['variants'] as List? ?? const []).isNotEmpty;
+          final hasModifiers = (item['modifiers'] as List? ?? const []).isNotEmpty;
+          if (hasVariants || hasModifiers) {
+            _configure(item);
+          } else {
+            _quickAdd(item);
+          }
+        },
         child: SizedBox(
           height: 88,
           child: Row(
@@ -251,12 +476,28 @@ class _AdminPosPanelState extends State<AdminPosPanel> {
                   ),
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.only(right: 9),
-                child: Icon(
-                  Icons.add_circle_rounded,
-                  color: HospitalityColors.saffron,
-                ),
+              Padding(
+                padding: const EdgeInsets.only(right: 9),
+                child: inCart > 0
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: HospitalityColors.saffron,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '$inCart',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
+                          ),
+                        ),
+                      )
+                    : const Icon(
+                        Icons.add_circle_rounded,
+                        color: HospitalityColors.saffron,
+                      ),
               ),
             ],
           ),

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/network/restaurant_api.dart';
 import '../../../core/theme/hospitality_theme.dart';
@@ -296,15 +297,18 @@ class _AdminKitchenPanelState extends State<AdminKitchenPanel> {
                           )
                         : Icon(
                             next == 'Ready'
-                                ? Icons.notifications_active_outlined
+                                ? Icons.soup_kitchen_rounded
                                 : next == 'Served'
-                                ? Icons.room_service_outlined
-                                : Icons.local_fire_department_outlined,
+                                ? Icons.room_service_rounded
+                                : Icons.local_fire_department_rounded,
                           ),
                     label: Text(
-                      next == 'Ready'
-                          ? 'Mark ready · notify waiter'
-                          : 'Mark $next',
+                      next == 'Preparing'
+                          ? '👨‍🍳 Start Cooking'
+                          : next == 'Ready'
+                          ? '🍲 Mark Ready (Notify Waiter)'
+                          : '🍽️ Mark Served',
+                      style: const TextStyle(fontWeight: FontWeight.w800),
                     ),
                   ),
                 ),
@@ -317,6 +321,7 @@ class _AdminKitchenPanelState extends State<AdminKitchenPanel> {
   }
 
   Future<void> _advance(Map<String, dynamic> order, String next) async {
+    HapticFeedback.mediumImpact();
     final id = '${order['_id']}';
     setState(() => busy.add(id));
     try {

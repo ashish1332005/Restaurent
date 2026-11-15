@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/network/restaurant_api.dart';
@@ -280,37 +281,71 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   );
   Widget _mobileNavigation() {
     final allowed = _allowedPages(role);
-    final primary = allowed.length <= 4
-        ? allowed
-        : allowed.where((page) => page <= 3).toList();
-    final showMore = allowed.length > primary.length;
+    final List<int> primary;
+    if (role == 'Waiter') {
+      primary = const [5, 1, 3, 6];
+    } else if (role == 'Kitchen') {
+      primary = const [4, 1];
+    } else if (role == 'Cashier') {
+      primary = const [5, 1, 3];
+    } else {
+      primary = const [0, 5, 1, 3];
+    }
+    final showMore = allowed.any((page) => !primary.contains(page));
     final selectedIndex = primary.contains(selected)
         ? primary.indexOf(selected)
         : primary.length;
-    return NavigationBar(
-      height: 66,
-      selectedIndex: selectedIndex,
-      onDestinationSelected: (value) {
-        if (value < primary.length) {
-          setState(() => selected = primary[value]);
-        } else {
-          scaffoldKey.currentState?.openDrawer();
-        }
-      },
-      destinations: [
-        ...primary.map(
-          (page) => NavigationDestination(
-            icon: Icon(items[page].$1),
-            selectedIcon: Icon(items[page].$1),
-            label: items[page].$2,
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
           ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+        child: NavigationBar(
+          height: 68,
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          indicatorColor: HospitalityColors.softSaffron,
+          selectedIndex: selectedIndex,
+          onDestinationSelected: (value) {
+            HapticFeedback.selectionClick();
+            if (value < primary.length) {
+              setState(() => selected = primary[value]);
+            } else {
+              scaffoldKey.currentState?.openDrawer();
+            }
+          },
+          destinations: [
+            ...primary.map(
+              (page) => NavigationDestination(
+                icon: Icon(items[page].$1),
+                selectedIcon: Icon(
+                  items[page].$1,
+                  color: HospitalityColors.saffronDark,
+                ),
+                label: items[page].$2,
+              ),
+            ),
+            if (showMore)
+              const NavigationDestination(
+                icon: Icon(Icons.grid_view_rounded),
+                selectedIcon: Icon(
+                  Icons.grid_view_rounded,
+                  color: HospitalityColors.saffronDark,
+                ),
+                label: 'More',
+              ),
+          ],
         ),
-        if (showMore)
-          const NavigationDestination(
-            icon: Icon(Icons.grid_view_rounded),
-            label: 'More',
-          ),
-      ],
+      ),
     );
   }
 
@@ -578,7 +613,54 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     );
                   },
                 ),
-                const SizedBox(height: 22),
+                const SizedBox(height: 16),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _dashboardActionChip(
+                        icon: Icons.point_of_sale_rounded,
+                        color: HospitalityColors.saffron,
+                        label: 'Take Order',
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => selected = 5);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _dashboardActionChip(
+                        icon: Icons.table_restaurant_rounded,
+                        color: const Color(0xFF245DE8),
+                        label: 'Floor Tables',
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => selected = 3);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _dashboardActionChip(
+                        icon: Icons.soup_kitchen_rounded,
+                        color: const Color(0xFFD66A2C),
+                        label: 'Kitchen KDS',
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => selected = 4);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _dashboardActionChip(
+                        icon: Icons.menu_book_rounded,
+                        color: const Color(0xFF21854A),
+                        label: 'Menu & Dishes',
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => selected = 2);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
                 const RoyalSectionHeading(
                   title: 'Live overview',
                   actionLabel: 'View all',
@@ -803,6 +885,41 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       ),
     ),
   );
+  Widget _dashboardActionChip({
+    required IconData icon,
+    required Color color,
+    required String label,
+    required VoidCallback onTap,
+  }) => Material(
+    color: Colors.white,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(14),
+      side: BorderSide(color: color.withValues(alpha: 0.3)),
+    ),
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                color: HospitalityColors.ink,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+
   Widget _royalGrid(List<Widget> children) => LayoutBuilder(
     builder: (context, constraints) {
       final columns = constraints.maxWidth >= 900 ? 4 : 2;
