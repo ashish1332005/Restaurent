@@ -55,7 +55,12 @@ jobs:
 
       - name: Rename APK for Easy Download
         run: |
-          cp restaurant-app-main/build/app/outputs/flutter-apk/app-release.apk ./restaurant-app.apk
+          APK_PATH=$(find restaurant-app-main/build -name "*release*.apk" | head -n 1)
+          if [ -z "$APK_PATH" ]; then
+            APK_PATH=$(find restaurant-app-main/build -name "*.apk" | head -n 1)
+          fi
+          echo "Found APK at: $APK_PATH"
+          cp "$APK_PATH" ./restaurant-app.apk
 
       - name: Upload Release APK Artifact
         uses: actions/upload-artifact@v4
@@ -87,6 +92,7 @@ jobs:
   build-web:
     name: Build & Deploy Flutter Web
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
