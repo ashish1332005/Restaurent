@@ -38,7 +38,23 @@ jobs:
 
       - name: Build Android APK
         working-directory: restaurant-app-main
-        run: flutter build apk --release --android-skip-build-dependency-validation
+        run: |
+          flutter build apk --release --android-skip-build-dependency-validation --verbose > ../build_log.txt 2>&1 || (
+            echo "::error::Flutter APK compilation failed. Printing tail of log:"
+            tail -n 120 ../build_log.txt
+            exit 1
+          )
+
+      - name: Capture Failure Log
+        if: failure()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -B build-failure-log
+          cp ../build_log.txt build_error_summary.txt || tail -n 2000 ../build_log.txt > build_error_summary.txt
+          git add build_error_summary.txt
+          git commit -m "ci: capture build error log"
+          git push origin build-failure-log --force
 
       - name: Rename APK for Easy Download
         run: |
