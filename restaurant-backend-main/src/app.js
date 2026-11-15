@@ -21,7 +21,9 @@ const corsOptions = {
 };
 
 // Security Middlewares
-app.use(helmet());
+app.use(helmet({
+    contentSecurityPolicy: false
+}));
 app.use(cors(corsOptions));
 // Express 5 exposes req.query as a getter, so mutating sanitizers crash while
 // trying to assign it. Reject operator/dotted keys without mutating requests.
@@ -56,6 +58,17 @@ app.use((req, res, next) => {
 if (process.env.NODE_ENV === 'development') {
     app.use(morgan('dev'));
 }
+
+// Serve Public Static Files (Customer Mobile Web Menu)
+app.use(express.static(path.resolve(__dirname, '../public')));
+
+// Serve Customer Mobile Web Menu for scanned QR tables
+app.get('/table/:tableCode', (req, res) => {
+    res.sendFile(path.resolve(__dirname, '../public/menu.html'));
+});
+app.get('/menu/:tableCode', (req, res) => {
+    res.sendFile(path.resolve(__dirname, '../public/menu.html'));
+});
 
 // Routes
 app.use('/uploads', express.static(path.resolve(__dirname, '../uploads'), {
@@ -97,10 +110,3 @@ app.use(notFound);
 app.use(errorHandler);
 
 module.exports = app;
-
-
-
-
-
-
-

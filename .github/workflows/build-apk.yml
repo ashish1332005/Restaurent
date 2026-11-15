@@ -81,3 +81,31 @@ jobs:
             - 🍽️ **Smart Table QR Ordering & Live Menu:** Bestsellers, Chef Specials, Category chips and real-time order tracking.
             - 📊 **Royal Admin Dashboard:** POS, Kitchen KDS, Floor tables, Inventory, Attendance and instant online plan upgrade.
           files: ./restaurant-app.apk
+
+  build-web:
+    name: Build & Deploy Flutter Web
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        working-directory: restaurant-app-main
+        run: flutter pub get
+
+      - name: Build Web App
+        working-directory: restaurant-app-main
+        run: flutter build web --release --base-href "/Restaurent/" --dart-define=API_BASE_URL=https://restaurent-2-xq6f.onrender.com/api/v1
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/master')
+        with:
+          folder: restaurant-app-main/build/web
+          branch: gh-pages

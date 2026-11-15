@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/network/restaurant_api.dart';
@@ -3749,7 +3750,12 @@ class AdminOperationsPanel extends StatelessWidget {
     if (kIsWeb && Uri.base.hasAuthority) {
       return '${Uri.base.origin}/table/${Uri.encodeComponent(token)}';
     }
-    return 'https://ashish1332005.github.io/Restaurent/#/table/${Uri.encodeComponent(token)}';
+    final serverUrl = LocalStorage.instance.getServerUrl();
+    final serverRoot = serverUrl.replaceFirst(RegExp(r'/api/v1/?$'), '').replaceFirst(RegExp(r'/$'), '');
+    if (serverRoot.isNotEmpty && !serverRoot.contains('10.0.2.2')) {
+      return '$serverRoot/table/${Uri.encodeComponent(token)}';
+    }
+    return 'https://restaurent-2-xq6f.onrender.com/table/${Uri.encodeComponent(token)}';
   }
 
   Future<void> _showQr(
@@ -3780,6 +3786,16 @@ class AdminOperationsPanel extends StatelessWidget {
       ),
       actions: [
         TextButton.icon(
+          onPressed: () async {
+            final uri = Uri.tryParse(_customerQrUrl(token));
+            if (uri != null) {
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+            }
+          },
+          icon: const Icon(Icons.open_in_browser_rounded),
+          label: const Text('Open Menu'),
+        ),
+        TextButton.icon(
           onPressed: () =>
               _downloadQr(context, tableName, _customerQrUrl(token)),
           icon: const Icon(Icons.download_outlined),
@@ -3789,10 +3805,10 @@ class AdminOperationsPanel extends StatelessWidget {
           onPressed: () async {
             await Clipboard.setData(ClipboardData(text: _customerQrUrl(token)));
             if (dialogContext.mounted)
-              _message(dialogContext, 'Customer QR link copied.');
+              _message(dialogContext, 'Customer QR link copied: ${_customerQrUrl(token)}');
           },
           icon: const Icon(Icons.copy),
-          label: const Text('Copy token'),
+          label: const Text('Copy link'),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(dialogContext),
