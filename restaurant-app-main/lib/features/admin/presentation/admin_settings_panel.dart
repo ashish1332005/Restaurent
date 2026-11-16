@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/network/restaurant_api.dart';
 import '../../../core/storage/local_storage.dart';
+import '../../../core/services/location_service.dart';
 
 class AdminSettingsPanel extends StatefulWidget {
   const AdminSettingsPanel({super.key, required this.branchId});
@@ -363,7 +365,7 @@ class _AdminSettingsPanelState extends State<AdminSettingsPanel> {
       keyboardType: TextInputType.number,
       decoration: const InputDecoration(
         labelText: 'Allowed ordering radius (metres)',
-        helperText: 'Customer must be inside this radius.',
+        helperText: 'Leave latitude/longitude empty to allow ordering without GPS restrictions.',
       ),
     ),
     const SizedBox(height: 10),
@@ -374,7 +376,10 @@ class _AdminSettingsPanelState extends State<AdminSettingsPanel> {
             controller: latitude,
             enabled: canEditRestaurant,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Latitude'),
+            decoration: const InputDecoration(
+              labelText: 'Latitude (GPS)',
+              hintText: 'e.g. 25.182540',
+            ),
           ),
         ),
         const SizedBox(width: 10),
@@ -383,9 +388,37 @@ class _AdminSettingsPanelState extends State<AdminSettingsPanel> {
             controller: longitude,
             enabled: canEditRestaurant,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Longitude'),
+            decoration: const InputDecoration(
+              labelText: 'Longitude (GPS)',
+              hintText: 'e.g. 75.834190',
+            ),
           ),
         ),
+      ],
+    ),
+    const SizedBox(height: 10),
+    Row(
+      children: [
+        Expanded(
+          child: FilledButton.tonalIcon(
+            onPressed: canEditRestaurant ? _captureCurrentLocation : null,
+            icon: const Icon(Icons.my_location_rounded, size: 18),
+            label: const Text('Capture Current GPS Location'),
+          ),
+        ),
+        if (latitude.text.trim().isNotEmpty && longitude.text.trim().isNotEmpty) ...[
+          const SizedBox(width: 8),
+          IconButton.filledTonal(
+            tooltip: 'Verify pin on Google Maps',
+            onPressed: () {
+              final url = Uri.parse(
+                'https://www.google.com/maps/search/?api=1&query=${latitude.text.trim()},${longitude.text.trim()}',
+              );
+              launchUrl(url, mode: LaunchMode.externalApplication);
+            },
+            icon: const Icon(Icons.map_outlined, size: 20),
+          ),
+        ],
       ],
     ),
     const SizedBox(height: 10),
@@ -500,6 +533,53 @@ class _AdminSettingsPanelState extends State<AdminSettingsPanel> {
       ],
     ),
   );
+  Future<void> _captureCurrentLocation() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            ),
+            SizedBox(width: 12),
+            Text('Detecting restaurant GPS location...'),
+          ],
+        ),
+        duration: Duration(seconds: 4),
+      ),
+    );
+
+    final position = await LocationService.getCurrentLocation();
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    if (position != null) {
+      setState(() {
+        latitude.text = position.latitude.toStringAsFixed(6);
+        longitude.text = position.longitude.toStringAsFixed(6);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: const Color(0xFF16A34A),
+          content: Text(
+            '📍 GPS Captured: ${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}',
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.red,
+          content: Text(
+            'Could not get GPS location. Please check device Location/GPS permission.',
+          ),
+        ),
+      );
+    }
+  }
+
   Future<void> _save() async {
     if (branch.isEmpty || restaurant.isEmpty) return;
     setState(() => saving = true);
