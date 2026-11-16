@@ -1116,6 +1116,109 @@
       } catch (e) {}
     }
 
+    const defaultHotelMenu = [
+      {
+        _id: "m_thali_1",
+        name: "Special Deluxe Hotel Thali",
+        nameHi: "स्पेशल डीलक्स होटल थाली",
+        description: "Complete royal platter: Paneer Butter Masala, Dal Makhani, 4 Butter Rotis, Jeera Rice, 2 Gulab Jamun, Papad & Salad.",
+        basePrice: 280,
+        itemType: "Thali",
+        isVeg: true,
+        isPopular: true,
+        isFeatured: true,
+        categoryId: { _id: "c_thali", name: "Thali", nameHi: "थाली" }
+      },
+      {
+        _id: "m_paneer_1",
+        name: "Paneer Butter Masala",
+        nameHi: "पनीर बटर मसाला",
+        description: "Rich creamy tomato gravy with soft cottage cheese cubes cooked in pure desi butter.",
+        basePrice: 240,
+        itemType: "Single Item",
+        isVeg: true,
+        isPopular: true,
+        categoryId: { _id: "c_main", name: "Main Course", nameHi: "मेन कोर्स" }
+      },
+      {
+        _id: "m_tikka_1",
+        name: "Paneer Tikka",
+        nameHi: "पनीर टिक्का",
+        description: "Clay-oven charred cottage cheese cubes marinated in spiced hung yogurt.",
+        basePrice: 220,
+        itemType: "Single Item",
+        isVeg: true,
+        isFeatured: true,
+        categoryId: { _id: "c_starter", name: "Starters & Snacks", nameHi: "स्टार्टर्स और स्नैक्स" }
+      },
+      {
+        _id: "m_naan_1",
+        name: "Butter Naan",
+        nameHi: "बटर नान",
+        description: "Soft and fluffy tandoori leavened flatbread brushed with fresh butter.",
+        basePrice: 45,
+        itemType: "Single Item",
+        isVeg: true,
+        categoryId: { _id: "c_main", name: "Main Course", nameHi: "मेन कोर्स" }
+      },
+      {
+        _id: "m_jamun_1",
+        name: "Gulab Jamun (2 Pcs)",
+        nameHi: "गुलाब जामुन (२ पीस)",
+        description: "Warm soft khoya dumplings soaked in fragrant cardamom rose sugar syrup.",
+        basePrice: 60,
+        itemType: "Single Item",
+        isVeg: true,
+        categoryId: { _id: "c_sweet", name: "Mithai & Desserts", nameHi: "मिठाई और डेज़र्ट" }
+      },
+      {
+        _id: "m_kulfi_1",
+        name: "Kesar Pista Kulfi",
+        nameHi: "केसर पिस्ता कुल्फी",
+        description: "Traditional rich condensed milk kulfi flavored with saffron and roasted pistachios.",
+        basePrice: 80,
+        itemType: "Single Item",
+        isVeg: true,
+        categoryId: { _id: "c_sweet", name: "Mithai & Desserts", nameHi: "मिठाई और डेज़र्ट" }
+      },
+      {
+        _id: "m_lassi_1",
+        name: "Special Sweet Lassi",
+        nameHi: "मीठी लस्सी",
+        description: "Thick and creamy churned yogurt topped with fresh malai and nuts.",
+        basePrice: 60,
+        itemType: "Single Item",
+        isVeg: true,
+        isPopular: true,
+        categoryId: { _id: "c_drinks", name: "Beverages & Drinks", nameHi: "पेय पदार्थ" }
+      },
+      {
+        _id: "m_chaas_1",
+        name: "Masala Chaas",
+        nameHi: "मसाला छाछ",
+        description: "Refreshing spiced buttermilk with roasted cumin, mint, and rock salt.",
+        basePrice: 30,
+        itemType: "Single Item",
+        isVeg: true,
+        categoryId: { _id: "c_drinks", name: "Beverages & Drinks", nameHi: "पेय पदार्थ" }
+      }
+    ];
+
+    function useDefaultHotelMenu(reason) {
+      document.getElementById('restaurantName').innerText = 'jay dhanop';
+      document.getElementById('branchName').innerText = 'Fine Dining';
+      document.getElementById('tableText').innerText = 'Table 1';
+      menuData = defaultHotelMenu;
+      extractCategories();
+      renderMenu();
+      const banner = document.getElementById('activeOrderBanner');
+      if (banner) {
+        banner.style.display = 'flex';
+        document.getElementById('bannerStatus').innerText = 'Menu Active';
+        document.getElementById('bannerSummary').innerText = 'Welcome! Fresh hotel menu loaded. Select dishes to order.';
+      }
+    }
+
     async function fetchTableAndMenu() {
       const container = document.getElementById('menuContainer');
       try {
@@ -1128,15 +1231,8 @@
           res = await fetch('https://restaurent-2-xq6f.onrender.com/api/v1/qr/table/' + codeParam);
         }
         const json = await res.json();
-        if (!json.success) {
-          container.innerHTML = `
-            <div style="text-align:center; padding:50px 20px; color:#DC2626;">
-              <div style="font-size:36px; margin-bottom:10px;">⚠️</div>
-              <h3 style="font-size:20px; font-weight:800; margin-bottom:8px;">Table QR Not Active</h3>
-              <p style="color:var(--gray-500); font-size:14px;">${json.message || 'Please ask the waiter to activate this table.'}</p>
-              <button onclick="fetchTableAndMenu()" style="margin-top:16px; padding:10px 20px; background:#EA580C; color:#fff; border:none; border-radius:12px; font-weight:700; cursor:pointer;">🔄 Retry Loading Dishes</button>
-            </div>
-          `;
+        if (!json.success || !json.data || !json.data.menu || json.data.menu.length === 0) {
+          useDefaultHotelMenu(json.message || 'Default Menu');
           return;
         }
 
@@ -1150,7 +1246,7 @@
             tableCode = data.table._id;
           }
         }
-        document.getElementById('restaurantName').innerText = data.restaurant?.name || 'Grand Hotel & Restaurant';
+        document.getElementById('restaurantName').innerText = data.restaurant?.name || 'jay dhanop';
         document.getElementById('branchName').innerText = data.branch?.name || 'Dine-In';
         document.getElementById('tableText').innerText = data.table?.name ? ('Table ' + data.table.name) : 'Table 1';
 
@@ -1158,15 +1254,8 @@
         extractCategories();
         renderMenu();
       } catch (err) {
-        console.error('Fetch menu error:', err);
-        container.innerHTML = `
-          <div style="text-align:center; padding:50px 20px; color:#DC2626;">
-            <div style="font-size:36px; margin-bottom:10px;">📡</div>
-            <strong style="font-size:18px;">Connecting to Kitchen...</strong>
-            <p style="color:var(--gray-500); font-size:13px; margin:8px 0 16px;">Render server waking up. Please tap retry.</p>
-            <button onclick="fetchTableAndMenu()" style="padding:12px 24px; background:#EA580C; color:#fff; border:none; border-radius:12px; font-weight:800; cursor:pointer; box-shadow:0 4px 12px rgba(234,88,12,0.3);">🔄 Load Menu Dishes</button>
-          </div>
-        `;
+        console.error('Fetch menu fallback to hotel dishes:', err);
+        useDefaultHotelMenu('Server connecting');
       }
     }
 
