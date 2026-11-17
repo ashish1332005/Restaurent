@@ -1,0 +1,236 @@
+=== ANALYZE LOG ===
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/admin/presentation/admin_operations_panel.dart:1321:29 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/admin/presentation/admin_operations_panel.dart:1323:29 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/admin/presentation/admin_operations_panel.dart:1325:29 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/admin/presentation/admin_operations_panel.dart:1327:29 • curly_braces_in_flow_control_structures
+   info • Use interpolation to compose strings and values. Try using string interpolation to build the composite string • lib/features/admin/presentation/admin_operations_panel.dart:1371:31 • prefer_interpolation_to_compose_strings
+   info • Use interpolation to compose strings and values. Try using string interpolation to build the composite string • lib/features/admin/presentation/admin_operations_panel.dart:1378:31 • prefer_interpolation_to_compose_strings
+   info • Unnecessary use of multiple underscores. Try using '_' • lib/features/admin/presentation/admin_operations_panel.dart:2082:43 • unnecessary_underscores
+   info • Unnecessary use of multiple underscores. Try using '_' • lib/features/admin/presentation/admin_operations_panel.dart:2193:41 • unnecessary_underscores
+   info • Unnecessary use of multiple underscores. Try using '_' • lib/features/admin/presentation/admin_operations_panel.dart:2193:45 • unnecessary_underscores
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/admin/presentation/admin_operations_panel.dart:2326:7 • curly_braces_in_flow_control_structures
+   info • Unnecessary use of multiple underscores. Try using '_' • lib/features/admin/presentation/admin_operations_panel.dart:2546:61 • unnecessary_underscores
+   info • Unnecessary use of multiple underscores. Try using '_' • lib/features/admin/presentation/admin_operations_panel.dart:2546:65 • unnecessary_underscores
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/admin/presentation/admin_operations_panel.dart:3167:35 • curly_braces_in_flow_control_structures
+   info • Use interpolation to compose strings and values. Try using string interpolation to build the composite string • lib/features/admin/presentation/admin_operations_panel.dart:3893:7 • prefer_interpolation_to_compose_strings
+   info • Use interpolation to compose strings and values. Try using string interpolation to build the composite string • lib/features/admin/presentation/admin_operations_panel.dart:3945:23 • prefer_interpolation_to_compose_strings
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/admin/presentation/admin_operations_panel.dart:4166:9 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/admin/presentation/admin_operations_panel.dart:4178:11 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/admin/presentation/admin_operations_panel.dart:4221:9 • curly_braces_in_flow_control_structures
+   info • 'color' is deprecated and shouldn't be used. use colors in eyeStyle and dataModuleStyle instead. Try replacing the use of the deprecated member with the replacement • lib/features/admin/presentation/admin_operations_panel.dart:4353:9 • deprecated_member_use
+   info • 'emptyColor' is deprecated and shouldn't be used. You should use the background color value of your container widget. Try replacing the use of the deprecated member with the replacement • lib/features/admin/presentation/admin_operations_panel.dart:4354:9 • deprecated_member_use
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/admin/presentation/admin_operations_panel.dart:4365:9 • curly_braces_in_flow_control_structures
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/features/admin/presentation/admin_pos_panel.dart:1:1 • deprecated_member_use
+   info • Use interpolation to compose strings and values. Try using string interpolation to build the composite string • lib/features/admin/presentation/admin_pos_panel.dart:300:23 • prefer_interpolation_to_compose_strings
+   info • Unnecessary use of multiple underscores. Try using '_' • lib/features/admin/presentation/admin_pos_panel.dart:439:43 • unnecessary_underscores
+   info • Unnecessary use of multiple underscores. Try using '_' • lib/features/admin/presentation/admin_pos_panel.dart:439:47 • unnecessary_underscores
+   info • Use interpolation to compose strings and values. Try using string interpolation to build the composite string • lib/features/admin/presentation/admin_pos_panel.dart:471:25 • prefer_interpolation_to_compose_strings
+   info • Use interpolation to compose strings and values. Try using string interpolation to build the composite string • lib/features/admin/presentation/admin_pos_panel.dart:720:31 • prefer_interpolation_to_compose_strings
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/admin/presentation/admin_pos_panel.dart:817:9 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/admin/presentation/admin_pos_panel.dart:819:9 • curly_braces_in_flow_control_structures
+   info • Use interpolation to compose strings and values. Try using string interpolation to build the composite string • lib/features/admin/presentation/admin_pos_panel.dart:1010:15 • prefer_interpolation_to_compose_strings
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/features/admin/presentation/admin_reports_panel.dart:1:1 • deprecated_member_use
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/admin/presentation/admin_reports_panel.dart:53:9 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/admin/presentation/admin_reports_panel.dart:324:9 • curly_braces_in_flow_control_structures
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/features/admin/presentation/admin_settings_panel.dart:3:1 • deprecated_member_use
+   info • Unnecessary use of multiple underscores. Try using '_' • lib/features/admin/presentation/admin_settings_panel.dart:286:39 • unnecessary_underscores
+   info • Unnecessary use of multiple underscores. Try using '_' • lib/features/admin/presentation/admin_settings_panel.dart:286:43 • unnecessary_underscores
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/features/admin/presentation/admin_staff_panel.dart:1:1 • deprecated_member_use
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/admin/presentation/admin_staff_panel.dart:41:9 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/admin/presentation/admin_staff_panel.dart:46:13 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/admin/presentation/admin_staff_panel.dart:154:9 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/admin/presentation/admin_staff_panel.dart:425:9 • curly_braces_in_flow_control_structures
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/features/admin/presentation/admin_waiter_panel.dart:2:1 • deprecated_member_use
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/admin/presentation/admin_waiter_panel.dart:62:9 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/admin/presentation/admin_waiter_panel.dart:155:17 • curly_braces_in_flow_control_structures
+  error • Arguments of a constant creation must be constant expressions. Try making the argument a valid constant, or use 'new' to call the constructor • lib/features/admin/presentation/admin_waiter_panel.dart:287:26 • const_with_non_constant_argument
+  error • The getter 'accentLight' isn't defined for the type 'HospitalityColors'. Try importing the library that defines 'accentLight', correcting the name to the name of an existing getter, or defining a getter or field named 'accentLight' • lib/features/admin/presentation/admin_waiter_panel.dart:287:44 • undefined_getter
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/features/admin/presentation/super_admin_dashboard_screen.dart:1:1 • deprecated_member_use
+   info • Unnecessary use of multiple underscores. Try using '_' • lib/features/admin/presentation/super_admin_dashboard_screen.dart:130:41 • unnecessary_underscores
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/admin/presentation/super_admin_dashboard_screen.dart:715:7 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/admin/presentation/super_admin_dashboard_screen.dart:733:7 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/admin/presentation/super_admin_dashboard_screen.dart:1058:7 • curly_braces_in_flow_control_structures
+warning • Returning a 'Future' without 'await' inside a try block. Try adding an 'await' • lib/features/auth/application/customer_auth_session.dart:64:7 • unawaited_return_in_try_block
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/features/auth/presentation/admin_login_screen.dart:1:1 • deprecated_member_use
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/auth/presentation/admin_login_screen.dart:72:9 • curly_braces_in_flow_control_structures
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext • lib/features/auth/presentation/admin_login_screen.dart:394:17 • use_build_context_synchronously
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/features/auth/presentation/restaurant_register_screen.dart:1:1 • deprecated_member_use
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/auth/presentation/restaurant_register_screen.dart:54:7 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/auth/presentation/restaurant_register_screen.dart:56:7 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/auth/presentation/restaurant_register_screen.dart:58:7 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/auth/presentation/restaurant_register_screen.dart:61:7 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/auth/presentation/restaurant_register_screen.dart:63:7 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/auth/presentation/restaurant_register_screen.dart:66:7 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/auth/presentation/restaurant_register_screen.dart:68:7 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/auth/presentation/restaurant_register_screen.dart:70:7 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block. Try wrapping the statement in a block • lib/features/auth/presentation/restaurant_register_screen.dart:96:9 • curly_braces_in_flow_control_structures
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext • lib/features/auth/presentation/restaurant_register_screen.dart:374:40 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext • lib/features/auth/presentation/restaurant_register_screen.dart:380:19 • use_build_context_synchronously
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/features/auth/presentation/widgets/owner_auth_shell.dart:1:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/features/system/presentation/system_pages.dart:1:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/main.dart:1:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/ui_reset/ui_reset_screen.dart:4:1 • deprecated_member_use
+   info • Use the null-aware marker '?' rather than a null check via an 'if'. Try using '?' • lib/ui_reset/ui_reset_screen.dart:724:9 • use_null_aware_elements
+   info • Use the null-aware marker '?' rather than a null check via an 'if'. Try using '?' • lib/ui_reset/ui_reset_screen.dart:725:9 • use_null_aware_elements
+  error • Undefined name '_restaurant'. Try correcting the name to one that is defined, or defining the name • lib/ui_reset/ui_reset_screen.dart:1085:19 • undefined_identifier
+   info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre. Try replacing the use of the deprecated member with the replacement • lib/ui_reset/ui_reset_screen.dart:1302:21 • deprecated_member_use
+   info • Unnecessary use of multiple underscores. Try using '_' • lib/ui_reset/ui_reset_screen.dart:1481:53 • unnecessary_underscores
+   info • Unnecessary use of multiple underscores. Try using '_' • lib/ui_reset/ui_reset_screen.dart:1481:57 • unnecessary_underscores
+   info • Unnecessary use of multiple underscores. Try using '_' • lib/ui_reset/ui_reset_screen.dart:1748:57 • unnecessary_underscores
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/ui_reset/widgets/checkout_modal_sheet.dart:1:1 • deprecated_member_use
+   info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre. Try replacing the use of the deprecated member with the replacement • lib/ui_reset/widgets/checkout_modal_sheet.dart:531:31 • deprecated_member_use
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext • lib/ui_reset/widgets/checkout_modal_sheet.dart:742:54 • use_build_context_synchronously
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/ui_reset/widgets/customer_loyalty_badge.dart:1:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/ui_reset/widgets/delight_feedback_sheet.dart:1:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/ui_reset/widgets/floating_cart_bar.dart:1:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/ui_reset/widgets/food_menu_card.dart:1:1 • deprecated_member_use
+   info • Unnecessary use of multiple underscores. Try using '_' • lib/ui_reset/widgets/food_menu_card.dart:228:51 • unnecessary_underscores
+   info • Unnecessary use of multiple underscores. Try using '_' • lib/ui_reset/widgets/food_menu_card.dart:228:55 • unnecessary_underscores
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/ui_reset/widgets/highlights_carousel.dart:1:1 • deprecated_member_use
+   info • Unnecessary use of multiple underscores. Try using '_' • lib/ui_reset/widgets/highlights_carousel.dart:70:35 • unnecessary_underscores
+   info • Unnecessary use of multiple underscores. Try using '_' • lib/ui_reset/widgets/highlights_carousel.dart:109:53 • unnecessary_underscores
+   info • Unnecessary use of multiple underscores. Try using '_' • lib/ui_reset/widgets/highlights_carousel.dart:109:57 • unnecessary_underscores
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/ui_reset/widgets/live_order_timeline.dart:1:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/ui_reset/widgets/payment_gateway_modal.dart:1:1 • deprecated_member_use
+   info • Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check • lib/ui_reset/widgets/payment_gateway_modal.dart:135:30 • use_build_context_synchronously
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/ui_reset/widgets/veg_non_veg_badge.dart:1:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • lib/ui_reset/widgets/wifi_dialog.dart:1:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • test/admin_responsive_test.dart:3:1 • deprecated_member_use
+   info • 'package:flutter/material.dart' is deprecated and shouldn't be used. Use package:material_ui/material_ui.dart instead. This feature was deprecated after v3.47.0-0.0.pre. Try replacing the use of the deprecated member with the replacement • test/widget_test.dart:3:1 • deprecated_member_use
+
+153 issues found. (ran in 8.8s)
+=== BUILD LOG ===
+Upgrading build.gradle.kts
+Upgrading gradle.properties
+Upgrading gradle.properties
+Running Gradle task 'assembleRelease'...                        
+Loading package information...                                                  
+Loading local repository...                                                     
+[                                       ] 3% Loading local repository...        
+[                                       ] 3% Fetch remote repository...         
+[=                                      ] 3% Fetch remote repository...         
+[=                                      ] 4% Fetch remote repository...         
+[=                                      ] 5% Fetch remote repository...         
+[==                                     ] 5% Fetch remote repository...         
+[==                                     ] 6% Fetch remote repository...         
+[==                                     ] 7% Fetch remote repository...         
+[==                                     ] 7% Computing updates...               
+[===                                    ] 8% Computing updates...               
+[===                                    ] 10% Computing updates...              
+[===                                    ] 10% Installing NDK (Side by side) 28.2
+[===                                    ] 10% Downloading android-ndk-r28c-linux
+[====                                   ] 10% Downloading android-ndk-r28c-linux
+[====                                   ] 11% Downloading android-ndk-r28c-linux
+[====                                   ] 12% Downloading android-ndk-r28c-linux
+[=====                                  ] 13% Downloading android-ndk-r28c-linux
+[=====                                  ] 14% Downloading android-ndk-r28c-linux
+[=====                                  ] 15% Downloading android-ndk-r28c-linux
+[======                                 ] 15% Downloading android-ndk-r28c-linux
+[======                                 ] 16% Downloading android-ndk-r28c-linux
+[======                                 ] 17% Downloading android-ndk-r28c-linux
+[=======                                ] 18% Downloading android-ndk-r28c-linux
+[=======                                ] 19% Downloading android-ndk-r28c-linux
+[=======                                ] 20% Downloading android-ndk-r28c-linux
+[========                               ] 20% Downloading android-ndk-r28c-linux
+[========                               ] 21% Downloading android-ndk-r28c-linux
+[========                               ] 22% Downloading android-ndk-r28c-linux
+[=========                              ] 23% Downloading android-ndk-r28c-linux
+[=========                              ] 24% Downloading android-ndk-r28c-linux
+[=========                              ] 25% Downloading android-ndk-r28c-linux
+[==========                             ] 25% Downloading android-ndk-r28c-linux
+[==========                             ] 26% Downloading android-ndk-r28c-linux
+[==========                             ] 27% Downloading android-ndk-r28c-linux
+[===========                            ] 28% Downloading android-ndk-r28c-linux
+[===========                            ] 29% Downloading android-ndk-r28c-linux
+[===========                            ] 30% Downloading android-ndk-r28c-linux
+[============                           ] 30% Downloading android-ndk-r28c-linux
+[============                           ] 31% Downloading android-ndk-r28c-linux
+[============                           ] 32% Downloading android-ndk-r28c-linux
+[============                           ] 33% Downloading android-ndk-r28c-linux
+[============                           ] 33% Unzipping...                      
+[============                           ] 33% Unzipping... android-ndk-r28c/    
+[============                           ] 33% Unzipping... android-ndk-r28c/READ
+[=============                          ] 33% Unzipping... android-ndk-r28c/READ
+[=============                          ] 33% Unzipping... android-ndk-r28c/meta
+[=============                          ] 33% Unzipping... android-ndk-r28c/shad
+[=============                          ] 33% Unzipping... android-ndk-r28c/ndk-
+[=============                          ] 33% Unzipping... android-ndk-r28c/wrap
+[=============                          ] 33% Unzipping... android-ndk-r28c/ndk-
+[=============                          ] 33% Unzipping... android-ndk-r28c/tool
+[=============                          ] 34% Unzipping... android-ndk-r28c/tool
+[=============                          ] 35% Unzipping... android-ndk-r28c/tool
+[==============                         ] 35% Unzipping... android-ndk-r28c/tool
+[==============                         ] 36% Unzipping... android-ndk-r28c/tool
+[==============                         ] 37% Unzipping... android-ndk-r28c/tool
+[===============                        ] 38% Unzipping... android-ndk-r28c/tool
+[===============                        ] 39% Unzipping... android-ndk-r28c/tool
+[===============                        ] 40% Unzipping... android-ndk-r28c/tool
+[================                       ] 40% Unzipping... android-ndk-r28c/tool
+[================                       ] 41% Unzipping... android-ndk-r28c/tool
+[================                       ] 42% Unzipping... android-ndk-r28c/tool
+[=================                      ] 43% Unzipping... android-ndk-r28c/tool
+[=================                      ] 44% Unzipping... android-ndk-r28c/tool
+[=================                      ] 45% Unzipping... android-ndk-r28c/tool
+[==================                     ] 45% Unzipping... android-ndk-r28c/tool
+[==================                     ] 46% Unzipping... android-ndk-r28c/tool
+[==================                     ] 47% Unzipping... android-ndk-r28c/tool
+[===================                    ] 48% Unzipping... android-ndk-r28c/tool
+[===================                    ] 49% Unzipping... android-ndk-r28c/tool
+[===================                    ] 50% Unzipping... android-ndk-r28c/tool
+[====================                   ] 50% Unzipping... android-ndk-r28c/tool
+[====================                   ] 51% Unzipping... android-ndk-r28c/tool
+[====================                   ] 52% Unzipping... android-ndk-r28c/tool
+[=====================                  ] 53% Unzipping... android-ndk-r28c/tool
+[=====================                  ] 54% Unzipping... android-ndk-r28c/tool
+[=====================                  ] 54% Unzipping... android-ndk-r28c/buil
+[=====================                  ] 54% Unzipping... android-ndk-r28c/sour
+[=====================                  ] 54% Unzipping... android-ndk-r28c/NOTI
+[=====================                  ] 54% Unzipping... android-ndk-r28c/ndk-
+[=====================                  ] 54% Unzipping... android-ndk-r28c/NOTI
+[=====================                  ] 54% Unzipping... android-ndk-r28c/pyth
+[=====================                  ] 54% Unzipping... android-ndk-r28c/preb
+[=====================                  ] 54% Unzipping... android-ndk-r28c/ndk-
+[=====================                  ] 54% Unzipping... android-ndk-r28c/sour
+[=====================                  ] 54% Unzipping... android-ndk-r28c/simp
+[=====================                  ] 55% Unzipping... android-ndk-r28c/simp
+[=====================                  ] 55% Unzipping... android-ndk-r28c/CHAN
+[=======================================] 100% Unzipping... android-ndk-r28c/CHA
+
+WARNING: Your Android app project: app located at: /home/runner/work/Restaurent/Restaurent/restaurant-app-main/android/app/build.gradle.kts
+applies the Kotlin Gradle Plugin, which will cause build failures in future versions of Flutter.
+Please migrate your app to Built-in Kotlin using this guide: https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers
+
+WARNING: Your app uses the following plugins that apply Kotlin Gradle Plugin (KGP): mobile_scanner
+Future versions of Flutter will fail to build if your app uses plugins that apply KGP.
+
+Please check the changelogs of these plugins and upgrade to a version that supports Built-in Kotlin.
+If no such version exists, report the issue to the plugin. If necessary, here is a guide on filing
+an issue against a plugin: https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers#report-incompatible-kotlin-gradle-plugin-usage-to-plugin-authors
+
+If you are a plugin author, please migrate your plugin to Built-in Kotlin using this guide: https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-plugin-authors
+lib/ui_reset/ui_reset_screen.dart:1085:19: Error: The getter '_restaurant' isn't defined for the type '_UiResetScreenState'.
+ - '_UiResetScreenState' is from 'package:restaurant_automation/ui_reset/ui_reset_screen.dart' ('lib/ui_reset/ui_reset_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named '_restaurant'.
+      final geo = _restaurant?['geoLocation'] as Map<String, dynamic>?;
+                  ^^^^^^^^^^^
+lib/features/admin/presentation/admin_waiter_panel.dart:287:44: Error: Member not found: 'accentLight'.
+        backgroundColor: HospitalityColors.accentLight,
+                                           ^^^^^^^^^^^
+Target kernel_snapshot_program failed: Exception
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildRelease'.
+> Process 'command '/opt/hostedtoolcache/flutter/stable-3.50.0-x64/flutter/bin/flutter'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 1m 19s
+Running Gradle task 'assembleRelease'...                           80.8s
+Gradle task assembleRelease failed with exit code 1
