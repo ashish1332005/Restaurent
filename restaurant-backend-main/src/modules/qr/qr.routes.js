@@ -518,6 +518,27 @@ router.post('/table/:tableCode/request', async (req, res, next) => {
       await tableSession.save();
       return res.status(401).json({ success: false, message: 'Customer session has expired.' });
     }
+
+    const branch = await Branch.findById(table.branchId).lean();
+    const restaurant = branch ? await Restaurant.findById(branch.restaurantId).lean() : null;
+    const latitude = Number(req.body.latitude);
+    const longitude = Number(req.body.longitude);
+    const hasRestaurantLocation = Number.isFinite(restaurant?.geoLocation?.latitude) && Number.isFinite(restaurant?.geoLocation?.longitude);
+    if (hasRestaurantLocation && (!Number.isFinite(latitude) || !Number.isFinite(longitude))) {
+      return res.status(400).json({ success: false, message: 'Location is required to request service.' });
+    }
+    if (hasRestaurantLocation) {
+      const radians = (degrees) => degrees * Math.PI / 180;
+      const deltaLat = radians(latitude - restaurant.geoLocation.latitude);
+      const deltaLng = radians(longitude - restaurant.geoLocation.longitude);
+      const a = Math.sin(deltaLat / 2) ** 2 + Math.cos(radians(restaurant.geoLocation.latitude)) * Math.cos(radians(latitude)) * Math.sin(deltaLng / 2) ** 2;
+      const distance = 2 * 6371000 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const allowedRadius = restaurant.orderRadiusMeters || 100;
+      if (distance > allowedRadius) {
+        return res.status(403).json({ success: false, message: `You must be inside the restaurant to request service (${Math.round(distance)}m away, allowed: ${allowedRadius}m).` });
+      }
+    }
+
     const type = String(req.body.type || '').trim();
     if (!['Waiter', 'Water', 'Bill', 'Refill', 'Cutlery', 'Cleaning', 'CustomNote'].includes(type)) return res.status(400).json({ success: false, message: 'Invalid service request type.' });
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/network/restaurant_api.dart';
+import '../../../core/storage/local_storage.dart';
 import '../../../core/theme/hospitality_theme.dart';
 import '../../../core/theme/headless_select_field.dart';
 
@@ -594,32 +595,51 @@ class _AdminPosPanelState extends State<AdminPosPanel> {
         const Divider(),
         _amount('Total', total, bold: true),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: busy || cart.isEmpty ? null : () => _submit(false),
-                child: const Text('Send order'),
-              ),
+        if ((LocalStorage.getRole() ?? '') == 'Waiter')
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: busy || cart.isEmpty ? null : () => _submit(false),
+              icon: const Icon(Icons.soup_kitchen_rounded, size: 18),
+              label: busy
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: HospitalityColors.surface,
+                      ),
+                    )
+                  : const Text('Send Order to Kitchen (KOT)'),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: FilledButton(
-                onPressed: busy || cart.isEmpty ? null : () => _submit(true),
-                child: busy
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: HospitalityColors.surface,
-                        ),
-                      )
-                    : const Text('Pay & send'),
+          )
+        else
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: busy || cart.isEmpty ? null : () => _submit(false),
+                  child: const Text('Send order'),
+                ),
               ),
-            ),
-          ],
-        ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton(
+                  onPressed: busy || cart.isEmpty ? null : () => _submit(true),
+                  child: busy
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: HospitalityColors.surface,
+                          ),
+                        )
+                      : const Text('Pay & send'),
+                ),
+              ),
+            ],
+          ),
       ],
     ),
   );

@@ -1082,11 +1082,26 @@ class _UiResetScreenState extends State<UiResetScreen> {
       return;
     }
     try {
+      final geo = _restaurant?['geoLocation'] as Map<String, dynamic>?;
+      double? latitude;
+      double? longitude;
+      if (geo?['latitude'] is num && geo?['longitude'] is num) {
+        final pos = await LocationService.getCurrentLocation();
+        if (pos == null) {
+          _message('Service call ke liye location permission zaroori hai.');
+          return;
+        }
+        latitude = pos.latitude;
+        longitude = pos.longitude;
+      }
+
       await RestaurantApi.sendQrServiceRequest(
         _tableCode!,
         _sessionToken!,
         type,
         paymentMethod: paymentMethod,
+        latitude: latitude,
+        longitude: longitude,
       );
       if (type == 'Bill') await _refreshOrder(silent: true);
       _message('$type request staff ko bhej di gayi.');

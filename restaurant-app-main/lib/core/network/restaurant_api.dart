@@ -657,6 +657,8 @@ class RestaurantApi {
     String? paymentMethod,
     String? menuItemId,
     String? dishName,
+    double? latitude,
+    double? longitude,
   }) async {
     await _client.post<void>(
       '/qr/table/$code/request',
@@ -665,6 +667,8 @@ class RestaurantApi {
         if (paymentMethod != null) 'paymentMethod': paymentMethod,
         if (menuItemId != null) 'menuItemId': menuItemId,
         if (dishName != null) 'dishName': dishName,
+        if (latitude != null) 'latitude': latitude,
+        if (longitude != null) 'longitude': longitude,
       },
       options: Options(headers: {'x-table-session-token': sessionToken}),
     );

@@ -886,6 +886,12 @@
     </div>
   </header>
 
+  <!-- Geofence Status Banner -->
+  <div id="geofenceBanner" style="display:none; margin: 10px 16px 2px; padding: 10px 14px; border-radius: 12px; font-size: 13px; font-weight: 600; align-items: center; gap: 10px; cursor: pointer; transition: all 0.2s;">
+    <span id="geofenceIcon" style="font-size: 16px;">📍</span>
+    <span id="geofenceText" style="flex: 1;">Checking table location...</span>
+  </div>
+
   <!-- Active Live Order Alert Banner (Shows when order exists) -->
   <div class="active-order-banner" id="activeOrderBanner" style="display:none;" onclick="openOrderTracker()">
     <div>
@@ -1253,6 +1259,7 @@
         menuData = data.menu || [];
         extractCategories();
         renderMenu();
+        evaluateGeofence();
       } catch (err) {
         console.error('Fetch menu fallback to hotel dishes:', err);
         useDefaultHotelMenu('Server connecting');
@@ -1432,6 +1439,81 @@
       document.getElementById('cartGrandTotal').innerText = '₹' + grand.toFixed(2);
     }
 
+    let userLocation = null;
+    let geofenceStatus = 'unknown';
+
+    async function getCustomerPosition() {
+      if (!navigator.geolocation) return null;
+      return new Promise((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            userLocation = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+            resolve(userLocation);
+          },
+          (err) => {
+            console.warn('Geolocation error or permission denied:', err);
+            resolve(null);
+          },
+          { timeout: 7000, enableHighAccuracy: true, maximumAge: 30000 }
+        );
+      });
+    }
+
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371e3; // meters
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+    }
+
+    async function evaluateGeofence() {
+      const restoGeo = restaurantData?.restaurant?.geoLocation;
+      const allowedRadius = restaurantData?.restaurant?.orderRadiusMeters || 100;
+      const banner = document.getElementById('geofenceBanner');
+      if (!banner) return;
+
+      if (!restoGeo || typeof restoGeo.latitude !== 'number' || typeof restoGeo.longitude !== 'number') {
+        geofenceStatus = 'disabled';
+        banner.style.display = 'none';
+        return;
+      }
+
+      banner.style.display = 'flex';
+      banner.style.background = '#FFFBEB';
+      banner.style.border = '1px solid #FDE68A';
+      banner.style.color = '#B45309';
+      document.getElementById('geofenceText').innerText = 'Verifying table location...';
+
+      const coords = await getCustomerPosition();
+      if (!coords) {
+        geofenceStatus = 'denied';
+        banner.style.background = '#FEF2F2';
+        banner.style.border = '1px solid #FECACA';
+        banner.style.color = '#991B1B';
+        document.getElementById('geofenceText').innerHTML = '📍 <strong>Location required</strong> to place orders or call staff. Tap to enable.';
+        banner.onclick = () => evaluateGeofence();
+        return;
+      }
+
+      const dist = calculateDistance(coords.latitude, coords.longitude, restoGeo.latitude, restoGeo.longitude);
+      if (dist <= allowedRadius) {
+        geofenceStatus = 'in-range';
+        banner.style.background = '#ECFDF5';
+        banner.style.border = '1px solid #A7F3D0';
+        banner.style.color = '#065F46';
+        document.getElementById('geofenceText').innerHTML = `🟢 <strong>At Table Verified</strong> (${Math.round(dist)}m) • Ready to order`;
+      } else {
+        geofenceStatus = 'out-of-range';
+        banner.style.background = '#FEF2F2';
+        banner.style.border = '1px solid #FECACA';
+        banner.style.color = '#991B1B';
+        document.getElementById('geofenceText').innerHTML = `⚠️ <strong>Outside Restaurant</strong> (${Math.round(dist)}m away) • Ordering restricted`;
+      }
+    }
+
     async function placeOrder() {
       const name = document.getElementById('custName').value.trim();
       const phone = document.getElementById('custPhone').value.trim();
@@ -1456,6 +1538,23 @@
         return;
       }
 
+      // Check restaurant geofencing radius
+      const restoGeo = restaurantData?.restaurant?.geoLocation;
+      const allowedRadius = restaurantData?.restaurant?.orderRadiusMeters || 100;
+      let coords = userLocation;
+      if (restoGeo && typeof restoGeo.latitude === 'number' && typeof restoGeo.longitude === 'number') {
+        if (!coords) coords = await getCustomerPosition();
+        if (!coords) {
+          alert('📍 Location permission is required by this restaurant to confirm you are at the table before ordering.');
+          return;
+        }
+        const dist = calculateDistance(coords.latitude, coords.longitude, restoGeo.latitude, restoGeo.longitude);
+        if (dist > allowedRadius) {
+          alert(`📍 Geofence restriction active:\nYou are ${Math.round(dist)} meters away from the restaurant (allowed radius: ${allowedRadius}m).\nOrders can only be placed while physically present at the restaurant table.`);
+          return;
+        }
+      }
+
       const btn = document.getElementById('placeOrderBtn');
       btn.innerHTML = '<span>Sending to Kitchen... ⏳</span>';
       btn.disabled = true;
@@ -1476,7 +1575,9 @@
             customerName: name,
             customerPhone: phone,
             kitchenNotes: notes,
-            items
+            items,
+            latitude: coords ? coords.latitude : undefined,
+            longitude: coords ? coords.longitude : undefined
           })
         });
 
@@ -1543,6 +1644,24 @@
         alert('Please place an order first before calling service.');
         return;
       }
+
+      // Check restaurant geofencing radius for floor requests
+      const restoGeo = restaurantData?.restaurant?.geoLocation;
+      const allowedRadius = restaurantData?.restaurant?.orderRadiusMeters || 100;
+      let coords = userLocation;
+      if (restoGeo && typeof restoGeo.latitude === 'number' && typeof restoGeo.longitude === 'number') {
+        if (!coords) coords = await getCustomerPosition();
+        if (!coords) {
+          alert('📍 Location permission is required to call restaurant staff from your table.');
+          return;
+        }
+        const dist = calculateDistance(coords.latitude, coords.longitude, restoGeo.latitude, restoGeo.longitude);
+        if (dist > allowedRadius) {
+          alert(`📍 You are ${Math.round(dist)} meters away. Floor staff service is only available inside the restaurant.`);
+          return;
+        }
+      }
+
       try {
         const res = await fetch(API_BASE + '/qr/table/' + encodeURIComponent(tableCode) + '/request', {
           method: 'POST',
@@ -1550,7 +1669,11 @@
             'Content-Type': 'application/json',
             'x-table-session-token': activeSession.sessionToken
           },
-          body: JSON.stringify({ type })
+          body: JSON.stringify({
+            type,
+            latitude: coords ? coords.latitude : undefined,
+            longitude: coords ? coords.longitude : undefined
+          })
         });
         const json = await res.json();
         if (json.success) {

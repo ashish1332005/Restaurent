@@ -271,12 +271,45 @@ class _AdminWaiterPanelState extends State<AdminWaiterPanel> {
 
   Widget _readyCard(Map<String, dynamic> o) =>
       _orderTile(o, Icons.restaurant, 'Serve', () => _orderStatus(o, 'Served'));
-  Widget _billCard(Map<String, dynamic> o) => _orderTile(
-    o,
-    Icons.payments_outlined,
-    'Open POS',
-    () => _message('Bill is ready for POS payment.'),
-  );
+
+  Widget _billCard(Map<String, dynamic> o) {
+    final id = '${o['_id']}';
+    final table = o['tableId'] is Map
+        ? '${o['tableId']['name'] ?? 'Table'}'
+        : '${o['orderType'] ?? 'Takeaway'}';
+    final count = (o['items'] as List? ?? const []).fold<int>(
+      0,
+      (sum, i) => sum + ((i as Map)['quantity'] as num? ?? 0).toInt(),
+    );
+    final total = (o['totalAmount'] as num?)?.toDouble() ?? 0.0;
+    return ListTile(
+      leading: const CircleAvatar(
+        backgroundColor: HospitalityColors.accentLight,
+        child: Icon(Icons.receipt_long_rounded, color: HospitalityColors.ink),
+      ),
+      title: Text(
+        '$table · Order #${_short(id)}',
+        style: const TextStyle(fontWeight: FontWeight.w700),
+      ),
+      subtitle: Text('₹${total.toStringAsFixed(0)} · $count items · ${_age(o['createdAt'])}'),
+      trailing: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.amber.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.amber.shade300),
+        ),
+        child: Text(
+          'At Cashier',
+          style: TextStyle(
+            color: Colors.amber.shade900,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
   Widget _orderTile(
     Map<String, dynamic> o,
     IconData icon,

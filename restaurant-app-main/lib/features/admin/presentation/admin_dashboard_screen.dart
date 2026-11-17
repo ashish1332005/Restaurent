@@ -280,7 +280,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     ),
   );
   Widget _mobileNavigation() {
-    final allowed = _allowedPages(role);
     final List<int> primary;
     if (role == 'Waiter') {
       primary = const [5, 1, 3, 6];
@@ -291,10 +290,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     } else {
       primary = const [0, 1, 2, 3];
     }
-    final showMore = allowed.any((page) => !primary.contains(page));
     final selectedIndex = primary.contains(selected)
         ? primary.indexOf(selected)
-        : primary.length;
+        : 0;
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -319,8 +317,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             HapticFeedback.selectionClick();
             if (value < primary.length) {
               setState(() => selected = primary[value]);
-            } else {
-              scaffoldKey.currentState?.openDrawer();
             }
           },
           destinations: [
@@ -334,15 +330,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 label: items[page].$2,
               ),
             ),
-            if (showMore)
-              const NavigationDestination(
-                icon: Icon(Icons.grid_view_rounded),
-                selectedIcon: Icon(
-                  Icons.grid_view_rounded,
-                  color: HospitalityColors.saffronDark,
-                ),
-                label: 'More',
-              ),
           ],
         ),
       ),
