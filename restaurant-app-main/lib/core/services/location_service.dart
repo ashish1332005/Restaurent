@@ -8,8 +8,12 @@ class LocationService {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        // Location services are not enabled
         debugPrint('Location services are disabled.');
+        try {
+          await Geolocator.openLocationSettings();
+        } catch (_) {}
+        serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        if (!serviceEnabled) return null;
       }
 
       LocationPermission permission = await Geolocator.checkPermission();
@@ -23,18 +27,57 @@ class LocationService {
 
       if (permission == LocationPermission.deniedForever) {
         debugPrint('Location permissions are permanently denied.');
+        try {
+          await Geolocator.openAppSettings();
+        } catch (_) {}
         return null;
       }
 
-      return await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 10),
-        ),
-      );
+      // Try high accuracy (outdoors / clear sky) with 6s timeout
+      try {
+        return await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            timeLimit: Duration(seconds: 6),
+          ),
+        );
+      } catch (e) {
+        debugPrint('High accuracy position timed out or failed ($e). Falling back to balanced network location...');
+      }
+
+      // Fallback: medium accuracy (works indoors via Wi-Fi and cell tower triangulation)
+      try {
+        return await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.medium,
+            timeLimit: Duration(seconds: 6),
+          ),
+        );
+      } catch (e) {
+        debugPrint('Medium accuracy position failed ($e). Checking last known location...');
+      }
+
+      // Final fallback: return cached last known location
+      return await Geolocator.getLastKnownPosition();
     } catch (e) {
       debugPrint('Error getting current location: $e');
       return null;
+    }
+  }
+
+  static Future<bool> openLocationSettings() async {
+    try {
+      return await Geolocator.openLocationSettings();
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<bool> openAppSettings() async {
+    try {
+      return await Geolocator.openAppSettings();
+    } catch (_) {
+      return false;
     }
   }
 

@@ -570,10 +570,16 @@ class _AdminSettingsPanelState extends State<AdminSettingsPanel> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: Colors.red,
-          content: Text(
-            'Could not get GPS location. Please check device Location/GPS permission.',
+        SnackBar(
+          backgroundColor: Colors.red.shade700,
+          duration: const Duration(seconds: 6),
+          content: const Text(
+            'GPS location detect nahi ho paya. Kripya phone ki Location (GPS) on karein aur permission allow karein.',
+          ),
+          action: SnackBarAction(
+            label: 'Settings',
+            textColor: Colors.amber,
+            onPressed: () => LocationService.openLocationSettings(),
           ),
         ),
       );
